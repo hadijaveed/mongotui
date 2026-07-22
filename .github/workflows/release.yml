@@ -29,10 +29,10 @@ jobs:
           - os: ubuntu-24.04-arm
             target: bun-linux-arm64
             asset: mongotui-linux-arm64
-          - os: macos-13          # Intel
+          - os: macos-15-intel    # Intel (macos-13 is retired; -intel labels are the free x64 runners)
             target: bun-darwin-x64
             asset: mongotui-darwin-x64
-          - os: macos-14          # Apple Silicon
+          - os: macos-15          # Apple Silicon (macos-14 is deprecated)
             target: bun-darwin-arm64
             asset: mongotui-darwin-arm64
     steps:
