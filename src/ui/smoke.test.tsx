@@ -76,7 +76,16 @@ describe("mongotui ui", () => {
     await t.mockInput.typeText("{ year: { $gte: 2010 } }");
     t.mockInput.pressEnter();
 
-    await t.waitFor(() => t.captureCharFrame().includes("matched"), { maxPasses: 200 });
+    // Wait for the NEW query's results to actually settle and render — not merely
+    // for the title to contain "matched". Mid-flight the title reads
+    // "? matched · loading…", which satisfied a bare includes("matched") before the
+    // fetch returned and captured an empty frame on slower CI runners (the docs are
+    // cleared to a loading state the instant the query runs). Gate on the store
+    // being done loading AND the row actually painted.
+    await t.waitFor(() => {
+      const r = useStore.getState().results;
+      return !r.loading && r.docs.length > 0 && t.captureCharFrame().includes("_id");
+    }, { maxPasses: 200 });
     const frame = t.captureCharFrame();
     expect(frame).toContain("_id");
   });
