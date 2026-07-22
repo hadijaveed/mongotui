@@ -21,8 +21,29 @@ permissions:
   contents: read
 
 jobs:
+  # The binary reports package.json `version` (bundled at build). If the pushed
+  # tag disagrees, `mongotui update` and install.sh would be inconsistent — so
+  # fail fast before building anything.
+  verify-version:
+    name: verify tag matches version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert tag == v<package.json version>
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          ver="v$(node -p "require('./package.json').version")"
+          echo "tag=$tag  package.json=$ver"
+          if [ "$tag" != "$ver" ]; then
+            echo "::error::tag $tag does not match package.json version $ver — bump package.json before tagging"
+            exit 1
+          fi
+
   build:
     name: ${{ matrix.asset }}
+    needs: verify-version
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read

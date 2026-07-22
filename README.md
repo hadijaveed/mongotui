@@ -23,6 +23,22 @@ download via `xz`, or a ~46 MB `gz` fallback), and installs to `/usr/local/bin` 
 `~/.local/bin`). Override with `MONGOTUI_VERSION=v0.1.0` or `MONGOTUI_BIN_DIR=~/bin`. If you fork,
 point at your repo with `MONGOTUI_REPO=you/mongotui` (or edit `REPO` in `install.sh`).
 
+## Update
+
+Update in place to the latest stable release — no re-running the installer:
+
+```sh
+mongotui update           # download + verify + replace the running binary
+mongotui update --check   # just report whether a newer release exists
+mongotui version          # print the installed version
+```
+
+`update` resolves the latest GitHub release, and when it's newer than the running
+binary, downloads the matching prebuilt asset, **verifies its published SHA-256**,
+and atomically swaps it in over itself. If the binary lives in a root-owned dir
+(e.g. `/usr/local/bin`), run `sudo mongotui update`. `MONGOTUI_REPO` targets a fork,
+same as the installer.
+
 ## Run (from source)
 
 ```sh
@@ -253,13 +269,20 @@ decompresses on the target. (`--bytecode` is not usable here — it rejects the 
 - **`.github/workflows/ci.yml`** — on every push/PR: spins up a `mongo:7` service, seeds it,
   then runs `typecheck` + the full `bun test` suite (unit, live-Mongo, and the
   multi-connection e2e in `src/state/connections.test.ts`).
-- **`.github/workflows/release.yml`** — push a tag `vX.Y.Z`: cross-compiles all four targets,
-  compresses each to `.xz` + `.gz` with SHA-256 sums, and attaches them to the GitHub Release.
+- **`.github/workflows/release.yml`** — push a tag `vX.Y.Z`: first asserts the tag matches
+  `package.json` `version` (so the binary never reports a version that disagrees with its
+  release), then cross-compiles all four targets, compresses each to `.xz` + `.gz` with
+  SHA-256 sums, and attaches them to the GitHub Release.
 - **`install.sh`** — the `curl | sh` installer above; detects OS/arch, prefers `.xz` (falls
   back to `.gz`), and installs to a bin dir on `PATH`.
+- **`src/update.ts`** — powers `mongotui update`: resolves the latest release off the
+  `/releases/latest` redirect (no API rate limit), downloads the matching `.gz` asset,
+  verifies its published SHA-256, and atomically replaces the running binary. `src/version.ts`
+  reads the compiled-in version from `package.json`.
 
-Cutting a release:
+Cutting a release (bump `package.json` `version` first, then tag to match):
 
 ```sh
-git tag v0.1.0 && git push origin v0.1.0   # release.yml builds + publishes the assets
+# set "version": "0.1.0" in package.json, commit, then:
+git tag v0.1.0 && git push origin v0.1.0   # release.yml verifies the match, builds + publishes
 ```

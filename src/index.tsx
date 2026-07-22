@@ -7,7 +7,34 @@ import { App } from "./ui/App.tsx";
 import { loadConfig, normalizeUri } from "./config.ts";
 import { getSecret, joinCredentials, migrateSecrets } from "./secrets.ts";
 import { applyTheme } from "./ui/theme.ts";
+import { CURRENT_VERSION, REPO } from "./version.ts";
+import { runUpdate } from "./update.ts";
 import type { ConnectionInfo } from "./shared/types.ts";
+
+// CLI subcommands are handled before any connection/TUI setup. Bare connection
+// strings (mongodb://…, host:port) never collide with these reserved words.
+const sub = process.argv[2];
+if (sub === "update") {
+  process.exit(await runUpdate({ checkOnly: process.argv.includes("--check") }));
+}
+if (sub === "version" || sub === "--version" || sub === "-v") {
+  process.stdout.write(`mongotui ${CURRENT_VERSION}\n`);
+  process.exit(0);
+}
+if (sub === "help" || sub === "--help" || sub === "-h") {
+  process.stdout.write(
+    `mongotui ${CURRENT_VERSION} — a terminal UI for MongoDB\n\n` +
+      `usage:\n` +
+      `  mongotui [uri]        open the TUI (default mongodb://localhost:27017)\n` +
+      `  mongotui host:port    connect to a bare host/port\n` +
+      `  mongotui update       update to the latest stable release\n` +
+      `  mongotui update --check   check for a newer release without installing\n` +
+      `  mongotui version      print the installed version\n` +
+      `  mongotui help         show this help\n\n` +
+      `releases: https://github.com/${REPO}/releases\n`,
+  );
+  process.exit(0);
+}
 
 function hostFromUri(uri: string): string {
   const withoutScheme = uri.replace(/^mongodb(?:\+srv)?:\/\//i, "");
