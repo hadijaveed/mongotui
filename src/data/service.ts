@@ -217,15 +217,23 @@ export function createMongoService(uri: string): MongoService {
     async listCollections(dbName: string): Promise<CollectionInfo[]> {
       return withConnection("list collections failed", async () => {
         const db = client.db(dbName);
-        const collections = (await db.listCollections({}, { nameOnly: true }).toArray())
-          .filter(({ name }) => !name.startsWith("system."));
-        return Promise.all(collections.map(async ({ name }) => {
-          try {
-            return { name, estimatedCount: await db.collection(name).estimatedDocumentCount() };
-          } catch {
-            return { name, estimatedCount: null };
+        const names = (await db.listCollections({}, { nameOnly: true }).toArray())
+          .filter(({ name }) => !name.startsWith("system."))
+          .map(({ name }) => name);
+        // Fetch counts a few at a time: one count command per collection all at
+        // once (160+ on a big db) floods the pool and most come back as errors,
+        // which render as blank counts. null = count unknown, not empty.
+        const out: CollectionInfo[] = names.map((name) => ({ name, estimatedCount: null }));
+        let next = 0;
+        await Promise.all(Array.from({ length: Math.min(8, names.length) }, async () => {
+          while (next < names.length) {
+            const i = next++;
+            try {
+              out[i] = { name: names[i]!, estimatedCount: await db.collection(names[i]!).estimatedDocumentCount() };
+            } catch { /* stays null */ }
           }
         }));
+        return out;
       });
     },
 

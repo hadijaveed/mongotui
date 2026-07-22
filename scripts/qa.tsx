@@ -367,14 +367,49 @@ await snap("after-drag-selection-cleared");
   const rows = sidebarRows(useStore.getState().tree);
   console.error(`collection-search: mflix loaded before='${loadedBefore}' after '/'=true; 'director' matched directors=${rows.some((r) => r.coll === "directors")}`);
   await snap("collection-search");
-  t.mockInput.pressEnter(); // jump straight to the match
+  // Enter drops into the still-filtered sidebar list (does NOT open directly).
+  t.mockInput.pressEnter();
+  await t.renderOnce();
+  const s1 = useStore.getState();
+  console.error(`search Enter → mode=${s1.tree.sidebarFilterMode} filterKept="${s1.tree.sidebarFilter}" pane=${s1.ui.focusedPane} sel-is-coll=${sidebarRows(s1.tree)[s1.tree.sidebarSel]?.type === "coll"}`);
+  await snap("search-dropped-to-list");
+  // Enter in the list opens the selected collection (focus moves to results
+  // once the find completes — wait for that before poking the sidebar again).
+  t.mockInput.pressEnter();
   await until("search-open", () => useStore.getState().ns?.coll === "directors", 200);
-  console.error(`collection-search Enter → ns=${useStore.getState().ns?.db}.${useStore.getState().ns?.coll} searchMode=${useStore.getState().tree.sidebarFilterMode}`);
+  await until("open-focus", () => useStore.getState().ui.focusedPane === "results", 200);
+  console.error(`list Enter → ns=${useStore.getState().ns?.db}.${useStore.getState().ns?.coll}`);
+  // Mock key events dispatch on the event loop — give each one a real tick
+  // before reading state, or assertions race the keypress.
+  const tick = async (): Promise<void> => { await t.renderOnce(); await sleep(30); await t.renderOnce(); };
+  // Esc back in the sidebar clears the applied filter.
+  useStore.getState().setFocus("sidebar");
+  await tick();
+  await t.mockInput.pressEscape();
+  await tick();
+  console.error(`sidebar esc → filter cleared="${useStore.getState().tree.sidebarFilter}" (empty=ok)`);
+  // Tab inside the search box must not be dead: it commits the filter and cycles panes.
+  await t.mockInput.pressKey("/");
+  await tick();
+  await t.mockInput.typeText("mov");
+  await tick();
+  await t.mockInput.pressTab();
+  await tick();
+  const s2 = useStore.getState();
+  console.error(`search Tab → mode=${s2.tree.sidebarFilterMode} pane=${s2.ui.focusedPane} filterKept="${s2.tree.sidebarFilter}"`);
+  useStore.getState().setSidebarFilterMode(false); // clean up for later scenarios
+  useStore.getState().setFocus("sidebar");
 }
 
 // ---- SIDEBAR SCROLL: a long collection list must follow the cursor (no ghost/blank rows) ----
 {
-  const many = Array.from({ length: 120 }, (_, i) => ({ name: `qa_coll_${String(i).padStart(3, "0")}`, estimatedCount: null }));
+  // Long names + counts + a scrollbar reproduce the field bug: rows used to be
+  // padded to the full inner width, so scrollbar columns made them wrap into
+  // blank ghost rows and clipped counts ("26.4k" → "26.").
+  const many = Array.from({ length: 120 }, (_, i) => ({
+    name: i % 3 === 0 ? `qa_coll_long_name_padding_${String(i).padStart(3, "0")}` : `qa_coll_${String(i).padStart(3, "0")}`,
+    estimatedCount: i % 2 === 0 ? (i + 1) * 137 : null,
+  }));
   useStore.setState((s) => ({
     tree: {
       ...s.tree,
@@ -388,9 +423,16 @@ await snap("after-drag-selection-cleared");
   for (let i = 0; i < 60; i++) { await t.mockInput.pressKey("j"); await t.renderOnce(); }
   await t.renderOnce();
   const sel = useStore.getState().tree.sidebarSel;
-  const selName = `qa_coll_${String(sel - 1).padStart(3, "0")}`; // row 0 is the db header
+  const selName = many[sel - 1]!.name; // row 0 is the db header
   const frame = t.captureCharFrame();
-  console.error(`sidebar-scroll: sel=${sel} selectedVisible=${frame.includes(selName)} (${selName})`);
+  // Every line between the first and last visible collection row must be a real
+  // row (blank left-columns there = the ghost-row bug), and counts must render
+  // in full, never clipped by the scrollbar.
+  const left = frame.split("\n").map((l) => l.slice(0, 30));
+  const idxs = left.map((l, i) => (l.includes("qa_coll") ? i : -1)).filter((i) => i >= 0);
+  const ghost = left.slice(idxs[0]!, idxs[idxs.length - 1]! + 1).filter((l) => l.trim() === "").length;
+  const fullCount = frame.includes(String((sel % 2 === 1 ? sel : sel + 1) * 137)) || /\d+(\.\d+)?k/.test(left.join("\n"));
+  console.error(`sidebar-scroll: sel=${sel} selectedVisible=${frame.includes(selName.slice(0, 20))} ghostRows=${ghost} countsRender=${fullCount} placeholder·=${left.some((l) => l.includes("·"))}`);
   await snap("sidebar-scroll-follows");
 }
 

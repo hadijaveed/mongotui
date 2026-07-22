@@ -92,6 +92,11 @@ export function Sidebar({ focused }: { focused: boolean }): React.ReactNode {
             width={INNER - 2}
             placeholder="search collections"
           />
+        ) : tree.sidebarFilter.trim() ? (
+          <text wrapMode="none">
+            <span fg={T.focus}>{tree.sidebarFilter}</span>
+            <span fg={T.dim}> · esc clears</span>
+          </text>
         ) : (
           <text><span fg={T.dim}>search collections… /</span></text>
         )}
@@ -136,28 +141,25 @@ interface RowProps {
 
 function SidebarRowView({ id, row, selected, expanded, loading, collCount, estCount, onClick }: RowProps): React.ReactNode {
   const bar = { text: selected ? "▎" : " ", color: selected ? T.focus : T.dim };
-  let content: React.ReactNode;
+  // Name and count are separate flex children with wrapping off: when the
+  // scrollbox shows a scrollbar the row loses columns, and a single padded
+  // text used to wrap into blank ghost rows / clip the count instead of
+  // truncating the name. `·` = count unknown (failed/not loaded) — a real
+  // empty collection shows 0.
+  let name: React.ReactNode;
+  let right: string | null = null;
   if (row.type === "db") {
     const marker = expanded ? "▾" : "▸";
     const count = collCount !== null ? ` (${collCount})` : loading ? " …" : "";
-    content = (
+    name = (
       <>
         <span fg={T.text}>{`${marker} ${row.db}`}</span>
         <span fg={T.dim}>{count}</span>
       </>
     );
   } else {
-    const name = row.coll ?? "";
-    const right = compact(estCount);
-    const used = 2 + name.length;
-    const pad = Math.max(1, INNER - used - right.length);
-    content = (
-      <>
-        <span fg={T.text}>{`  ${name}`}</span>
-        <span>{" ".repeat(pad)}</span>
-        <span fg={T.dim}>{right}</span>
-      </>
-    );
+    name = <span fg={T.text}>{`  ${row.coll ?? ""}`}</span>;
+    right = estCount === null ? "·" : compact(estCount);
   }
   return (
     <box
@@ -165,10 +167,15 @@ function SidebarRowView({ id, row, selected, expanded, loading, collCount, estCo
       onMouseDown={onClick}
       style={{ height: 1, flexDirection: "row", backgroundColor: selected ? T.selBg : undefined }}
     >
-      <text>
+      <text wrapMode="none" style={{ flexGrow: 1, flexShrink: 1 }}>
         <span fg={bar.color}>{bar.text}</span>
-        {content}
+        {name}
       </text>
+      {right !== null && (
+        <text wrapMode="none" style={{ flexShrink: 0 }}>
+          <span fg={T.dim}>{` ${right}`}</span>
+        </text>
+      )}
     </box>
   );
 }

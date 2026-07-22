@@ -434,15 +434,23 @@ function cycleField(store: StoreState, dir: 1 | -1): void {
 
 function handleSidebarFilter(store: StoreState, key: KeyEvent): void {
   if (key.name === "escape") return store.setSidebarFilterMode(false);
+  if (key.name === "tab") {
+    // Tab must never feel dead: commit the filter and move to the next pane.
+    store.setSidebarFilterMode(false, true);
+    store.cyclePane(key.shift ? -1 : 1);
+    return;
+  }
   const rows = sidebarRows(store.tree);
-  // Arrows navigate the matches while you keep typing; Enter jumps to a collection.
+  // Arrows navigate the matches while you keep typing; Enter drops into the
+  // (still-filtered) list to pick one — Enter there opens it, esc clears.
   if (key.name === "down") return store.sidebarTo(Math.min(rows.length - 1, store.tree.sidebarSel + 1));
   if (key.name === "up") return store.sidebarTo(Math.max(0, store.tree.sidebarSel - 1));
   if (key.name === "return" || key.name === "enter") {
     const sel = Math.min(store.tree.sidebarSel, Math.max(0, rows.length - 1));
-    const chosen = rows[sel]?.type === "coll" ? rows[sel] : rows.find((r) => r.type === "coll");
-    store.setSidebarFilterMode(false);
-    if (chosen && chosen.type === "coll") void store.openCollection({ db: chosen.db, coll: chosen.coll! });
+    const idx = rows[sel]?.type === "coll" ? sel : rows.findIndex((r) => r.type === "coll");
+    store.setSidebarFilterMode(false, true);
+    store.setFocus("sidebar");
+    if (idx >= 0) store.sidebarTo(idx);
     return;
   }
   const next = applyKey(
@@ -457,6 +465,11 @@ function handleSidebar(store: StoreState, key: KeyEvent): void {
   const sel = Math.min(store.tree.sidebarSel, Math.max(0, rows.length - 1));
   const row = rows[sel];
   const seq = key.sequence;
+
+  // Esc clears an applied search filter (the list goes back to the full tree).
+  if (key.name === "escape" && store.tree.sidebarFilter.trim()) {
+    return store.setSidebarFilterMode(false);
+  }
 
   if (key.name === "down" || seq === "j") return store.sidebarTo(sel + 1);
   if (key.name === "up" || seq === "k") return store.sidebarTo(sel - 1);

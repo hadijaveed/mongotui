@@ -76,7 +76,10 @@ top-right also opens it (mouse works even inside tmux).
 The databases pane has a search box at the top: press `/` (or click it) and type — it
 fuzzy-matches collections across **all** databases, not just the ones you've expanded
 (the first `/` loads every database's collection names in the background). `↑` / `↓` move
-through the matches, `enter` jumps straight to the highlighted collection, `esc` cancels.
+through the matches while you type; `enter` drops you into the filtered list to pick one
+(`enter` again opens it), `tab` keeps the filter and moves to the next pane, `esc` cancels
+— and `esc` from the filtered list clears the filter. A collection's document count shows
+to the right; `·` means the count isn't known yet (a truly empty collection shows `0`).
 The command palette (`:`) is the other way in and searches the same full set. (Field-name
 search — jumping to a specific field within the open collection — is a natural next step;
 the schema is already sampled per collection, so it can be layered onto this same finder.)

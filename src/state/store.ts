@@ -165,7 +165,7 @@ export interface StoreState {
 
   sidebarMove: (delta: number) => void;
   sidebarTo: (index: number) => void;
-  setSidebarFilterMode: (on: boolean) => void;
+  setSidebarFilterMode: (on: boolean, keepFilter?: boolean) => void;
   setSidebarFilter: (value: string, cursor: number) => void;
 
   setQueryField: (field: QueryField, value: string, cursor: number) => void;
@@ -332,7 +332,10 @@ export const useStore = create<StoreState>((set, get) => ({
     }
     expanded.add(name);
     set((s) => ({ tree: { ...s.tree, expandedDbs: expanded } }));
-    if (tree.collectionsByDb[name]) return;
+    // A name-only cache entry (every count null — how sidebar search preloads
+    // collections) must be upgraded to real counts on expand, not skipped.
+    const cached = tree.collectionsByDb[name];
+    if (cached && (cached.length === 0 || cached.some((c) => c.estimatedCount !== null))) return;
     const loading = new Set(tree.loadingDbs);
     loading.add(name);
     set((s) => ({ tree: { ...s.tree, loadingDbs: loading } }));
@@ -544,13 +547,13 @@ export const useStore = create<StoreState>((set, get) => ({
 
   sidebarTo: (index) => set((s) => ({ tree: { ...s.tree, sidebarSel: Math.max(0, index) } })),
 
-  setSidebarFilterMode: (on) => {
+  setSidebarFilterMode: (on, keepFilter = false) => {
     set((s) => ({
       tree: {
         ...s.tree,
         sidebarFilterMode: on,
-        sidebarFilter: on ? s.tree.sidebarFilter : "",
-        sidebarFilterCursor: on ? s.tree.sidebarFilterCursor : 0,
+        sidebarFilter: on || keepFilter ? s.tree.sidebarFilter : "",
+        sidebarFilterCursor: on || keepFilter ? s.tree.sidebarFilterCursor : 0,
       },
     }));
     if (on) void get().loadAllCollections(); // make search reach every database
