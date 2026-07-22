@@ -1,0 +1,38 @@
+  ◆ mongotui · localhost:27017 · mflix.movies                                                                    : commands  ? help  q quit 
+  1:movies   2:users   3:movies ×  [ + ]                                                                                                    
+╭─databases──────────────────╮╭─filter─────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│⌕ search collections… /     ││{ field: value }                                                                       find · agg  ▾ options│
+│ ▸ admin                    │╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│ ▸ config                   │╭─movies · ~500 matched · 9ms────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ local                    ││[ Documents ] [ Table ]                                                              1–50 of 500 · page 1/10│
+│ ▾ mflix (4)                ││_id                                                                                                         │
+│   movies                500││000000…002710                                                                                              █│
+│   directors              50││000000…002711                                                                                              █│
+│   comments               1k││000000…002712                                                                                              █│
+│▎  users                 100││000╭──────────────────────────────────────────────────────────────────────╮                                █│
+│ ▸ mongotui_conn_test       ││000│ >  type a command…                                                   │                                █│
+│                            ││000│ ▎new tab                   duplicate the current collection into a T │                                █│
+│                            ││000│  close tab                 close the active tab                    X │                                █│
+│                            ││000│  next tab                  switch to the next tab                  ] │                                █│
+│                            ││000│  previous tab              switch to the previous tab              [ │                                █│
+│                            ││000│  table view                show results as a table                 v │                                █│
+│                            ││000│  documents view            show results as folded documents        v │                                █│
+│                            ││000│  detail view               open the selected document              ⏎ │                                █│
+│                            ││000│  switch to aggregate mode  toggle between find queries and aggregatA │                                █│
+│                            ││000│  run query                 execute the current find / pipeline     ⏎ │                                █│
+│                            ││000│  show query options        project / sort / collation / hint / skita │                                 │
+│                            ││000│  focus query               jump to the query editor                / │                                 │
+│                            ││000│  edit document             edit the selected document in $EDITOR   e │                                 │
+│                            ││000│ ↑↓ move · ⏎ run · esc close                                          │                                 │
+│                            ││000╰──────────────────────────────────────────────────────────────────────╯                                 │
+│                            ││000000…002723                                                                                               │
+│                            ││000000…002724                                                                                               │
+│                            ││000000…002725                                                                                               │
+│                            ││000000…002726                                                                                               │
+│                            ││000000…002727                                                                                               │
+│                            ││000000…002728                                                                                               │
+│                            ││000000…002729                                                                                               │
+│                            ││000000…00272a                                                                                               │
+│                            ││000000…00272b                                                                                               │
+╰────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ⟨results⟩ theme: tokyonight                                                                                           mflix.movies · ● 3ms 

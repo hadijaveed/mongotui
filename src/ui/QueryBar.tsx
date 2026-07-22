@@ -1,8 +1,9 @@
 import { useTerminalDimensions } from "@opentui/react";
 import type { QueryField } from "../shared/types.ts";
-import { useStore, type QueryMode } from "../state/store.ts";
+import { useStore, type QueryMode, type StoreState } from "../state/store.ts";
 import { T, type Color } from "./theme.ts";
 import { LineEditor } from "./LineEditor.tsx";
+import { currentToken, suggest, type Suggestion } from "./autocomplete.ts";
 
 const RIGHT_W = 24;
 
@@ -37,14 +38,16 @@ interface OptionField {
   colorize: boolean;
 }
 
+// Placeholders are prefixed so an empty row can never be mistaken for a set
+// value: object fields show an `e.g.` example, scalars show their default.
 const OPTION_FIELDS: OptionField[] = [
-  { field: "project", label: "Project", placeholder: "{ field: 0 }", colorize: true },
-  { field: "sort", label: "Sort", placeholder: "{ field: -1 }", colorize: true },
-  { field: "collation", label: "Collation", placeholder: "{ locale: 'simple' }", colorize: true },
-  { field: "hint", label: "Hint", placeholder: `{ field: -1 } or "indexName"`, colorize: true },
-  { field: "skip", label: "Skip", placeholder: "0", colorize: false },
-  { field: "limit", label: "Limit", placeholder: "50", colorize: false },
-  { field: "maxTimeMS", label: "MaxTimeMS", placeholder: "10000", colorize: false },
+  { field: "project", label: "Project", placeholder: "e.g. { title: 1, year: 1 }", colorize: true },
+  { field: "sort", label: "Sort", placeholder: "e.g. { year: -1 }", colorize: true },
+  { field: "collation", label: "Collation", placeholder: "e.g. { locale: 'en', strength: 2 }", colorize: true },
+  { field: "hint", label: "Hint", placeholder: `e.g. { year: 1 } or "index_name"`, colorize: true },
+  { field: "skip", label: "Skip", placeholder: "default 0", colorize: false },
+  { field: "limit", label: "Limit", placeholder: "default 50 (0 = no limit)", colorize: false },
+  { field: "maxTimeMS", label: "MaxTimeMS", placeholder: "default 10000", colorize: false },
 ];
 
 const LABEL_W = 11;
@@ -96,6 +99,98 @@ function PipelineBar({ focused }: { focused: boolean }): React.ReactNode {
         </box>
         <ModeControls mode="aggregate" />
       </box>
+    </box>
+  );
+}
+
+// ---- Autocomplete popup ----------------------------------------------------
+
+interface ActiveAutocomplete {
+  value: string;
+  cursor: number;
+  suggestions: Suggestion[];
+  isOption: boolean;
+  activeField: QueryField;
+}
+
+/** Compute the suggestions for whatever query field is currently active. */
+export function queryAutocomplete(s: StoreState): ActiveAutocomplete {
+  const q = s.query;
+  if (q.mode === "aggregate") {
+    // Aggregate mode has no per-collection field schema in scope → stages + ops.
+    const { token } = currentToken(q.pipeline, q.pipelineCursor);
+    return { value: q.pipeline, cursor: q.pipelineCursor, suggestions: suggest(token, [], "aggregate"), isOption: false, activeField: "filter" };
+  }
+  const field = q.activeField;
+  const value = q.input[field];
+  const fields = (s.results.schema?.fields ?? []).map((f) => f.path);
+  const { token } = currentToken(value, q.cursor);
+  return { value, cursor: q.cursor, suggestions: suggest(token, fields, "find"), isOption: field !== "filter", activeField: field };
+}
+
+/** The popup is shown iff the query pane is focused, has suggestions, and wasn't dismissed. */
+export function suggestVisible(s: StoreState): boolean {
+  if (s.ui.focusedPane !== "query") return false;
+  if (s.query.suggestDismissed) return false;
+  return queryAutocomplete(s).suggestions.length > 0;
+}
+
+const SIDEBAR_W = 30;
+const POPUP_MAX_W = 48;
+
+/**
+ * Store-derived overlay (like the command palette) rendered at App level so the
+ * bordered QueryBar box can't clip it. Absolutely positioned directly below the
+ * active field row, near the token start column.
+ */
+export function Autocomplete(): React.ReactNode {
+  const store = useStore();
+  const dims = useTerminalDimensions();
+
+  // Never draw over a modal / palette.
+  if (store.ui.modal || store.ui.themeModal || store.ui.connModal || store.ui.paletteModal) return null;
+  if (!suggestVisible(store)) return null;
+
+  const ac = queryAutocomplete(store);
+  const suggestions = ac.suggestions.slice(0, 8);
+  const sel = Math.min(Math.max(0, store.query.suggestSel), suggestions.length - 1);
+
+  const tabBarVisible = store.ns !== null || store.tabs.some((t, i) => i !== store.activeTab && t.ns !== null);
+  const queryBarTop = 1 + (tabBarVisible ? 1 : 0);
+  const innerRow = ac.isOption ? 1 + OPTION_FIELDS.findIndex((o) => o.field === ac.activeField) : 0;
+  const top = queryBarTop + 1 /* top border */ + innerRow + 1 /* below the active row */;
+
+  const innerW = Math.min(
+    POPUP_MAX_W,
+    Math.max(...suggestions.map((s) => 1 + s.text.length + 2 + s.hint.length)),
+  );
+  const boxW = innerW + 2;
+  const editorX = SIDEBAR_W + 1 /* query border */ + (ac.isOption ? LABEL_W : 0);
+  const { start } = currentToken(ac.value, ac.cursor);
+  const left = Math.max(editorX, Math.min(editorX + start, dims.width - boxW - 1));
+
+  return (
+    <box
+      border
+      borderStyle="rounded"
+      borderColor={T.border}
+      style={{ position: "absolute", top, left, zIndex: 90, width: boxW, backgroundColor: T.panel, flexDirection: "column" }}
+    >
+      {suggestions.map((sug, i) => {
+        const selected = i === sel;
+        return (
+          <box
+            key={sug.text}
+            style={{ height: 1, flexDirection: "row", width: innerW, backgroundColor: selected ? T.selBg : undefined }}
+          >
+            <text wrapMode="none">
+              <span fg={selected ? T.focus : T.dim}>{selected ? "▎" : " "}</span>
+              <span fg={T.text}>{sug.text}</span>
+              <span fg={T.dim}>{`  ${sug.hint}`}</span>
+            </text>
+          </box>
+        );
+      })}
     </box>
   );
 }
@@ -170,6 +265,10 @@ export function QueryBar({ focused }: { focused: boolean }): React.ReactNode {
         ? OPTION_FIELDS.map((opt) => {
             const active = focused && query.activeField === opt.field;
             const invalid = !query.validation[opt.field].valid;
+            const isSet = query.input[opt.field].trim().length > 0;
+            // Label color says at a glance which options are actually set:
+            // accent = active, normal = has a value, dim = empty (placeholder).
+            const labelFg = active ? T.focus : isSet ? T.text : T.dim;
             return (
               <box
                 key={opt.field}
@@ -177,7 +276,7 @@ export function QueryBar({ focused }: { focused: boolean }): React.ReactNode {
                 onMouseDown={() => clickField(opt.field, true)}
               >
                 <box style={{ width: LABEL_W }}>
-                  <text><span fg={active ? T.text : T.dim}>{opt.label}</span></text>
+                  <text><span fg={labelFg}>{isSet && !active ? `${opt.label} ●` : opt.label}</span></text>
                 </box>
                 <box style={{ flexGrow: 1 }}>
                   <LineEditor

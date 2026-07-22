@@ -13,6 +13,7 @@ import {
   newDoc,
 } from "./edit.ts";
 import { openConnections, openExplain, openThemePicker } from "./actions.ts";
+import { sanitizeLabel } from "../data/format.ts";
 
 export interface Command {
   id: string;
@@ -85,9 +86,18 @@ export function buildCommands(store: StoreState): Command[] {
     a === currentDb ? -1 : b === currentDb ? 1 : a.localeCompare(b),
   );
   for (const db of dbs) {
+    const seen = new Set<string>();
     for (const coll of store.tree.collectionsByDb[db] ?? []) {
-      const ns = { db, coll: coll.name };
-      add({ id: `jump.${db}.${coll.name}`, name: `${db}.${coll.name}`, description: "open collection", run: () => void s().openCollection(ns) });
+      // Skip nameless (invalid — can't open) and duplicate entries, and sanitize
+      // the DISPLAY name so control chars in a real collection name can't blank
+      // the row or spuriously fuzzy-match. `run` still opens the real name.
+      const real = coll.name;
+      if (!real || !real.trim() || seen.has(real)) continue;
+      seen.add(real);
+      const label = sanitizeLabel(real);
+      if (!label) continue; // name was entirely control chars
+      const ns = { db, coll: real };
+      add({ id: `jump.${db}.${real}`, name: `${sanitizeLabel(db)}.${label}`, description: "open collection", run: () => void s().openCollection(ns) });
     }
   }
 

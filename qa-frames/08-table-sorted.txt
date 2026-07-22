@@ -1,0 +1,38 @@
+  ◆ mongotui · localhost:27017 · mflix.movies                                                                    : commands  ? help  q quit 
+  1:movies ×  [ + ]                                                                                                [o] new tab from sidebar 
+╭─databases──────────────────╮╭─filter ✓───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│⌕ search collections… /     ││{ year: { $gte: 2010 }, "imdb.rating": { $gte: 8 } }                                   find · agg  ▴ options│
+│ ▸ admin                    ││Project    e.g. { title: 1, year: 1 }                                                                       │
+│ ▸ config                   ││Sort ●     { "imdb.rating": -1 }                                                                            │
+│ ▸ local                    ││Collation  e.g. { locale: 'en', strength: 2 }                                                               │
+│ ▾ mflix (4)                ││Hint       e.g. { year: 1 } or "index_name"                                                                 │
+│▎  movies                500││Skip       default 0                                                                                        │
+│   directors              50││Limit      default 50 (0 = no limit)                                                                        │
+│   comments               1k││MaxTimeMS  default 10000                                                                                    │
+│   users                 100│╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│ ▸ mongotui_conn_test       │╭─movies · 26 matched · 8ms──────────────────────────────────────────────────────────────────────────────────╮
+│                            ││[ Documents ] [ Table ]                                                                1–26 of 26 · page 1/1│
+│                            ││_id           title               released   year   runtime plot                             ‹ cols 1–6/20 ›│
+│                            ││000000…002809 Midnight World 250  1999-08-03 2022   84      A unseen tale of friendsh…                     █│
+│                            ││000000…00277f Electric Sky 112    1996-11-16 2017   152     A lost tale of friendship…                     █│
+│                            ││000000…0027fc Broken City 237     1978-11-09 2022   128     A last tale of friendship…                     █│
+│                            ││000000…00284c Broken Light 317    2001-12-03 2018   103     A unseen tale of friendsh…                     ▀│
+│                            ││000000…00283f Wild Journey 304    2007-08-07 2012   82      A hidden tale of friendsh…                      │
+│                            ││000000…002731 Lost Sky 34         1986-02-26 2011   77      A midnight tale of friend…                      │
+│                            ││000000…002882 Midnight River 371  2023-08-08 2010   123     A quiet tale of friendshi…                      │
+│                            ││000000…0027c0 Lost Light 177      2010-11-24 2011   173     A unseen tale of friendsh…                      │
+│                            ││000000…0027fb Midnight River 236  1981-06-27 2017   124     A quiet tale of friendshi…                      │
+│                            ││000000…0028ec Broken River 477    1986-06-18 2024   101     A wild tale of friendship…                      │
+│                            ││000000…002889 Lost Sky 378        1995-12-17 2017   168     A unseen tale of friendsh…                      │
+│                            ││000000…002762 Last Sky 83         1998-10-22 2014   136     A broken tale of friendsh…                      │
+│                            ││000000…002801 Electric City 242   1981-05-07 2019   141     A silver tale of friendsh…                      │
+│                            ││000000…00272e Silver Sky 31       1984-08-26 2011   171     A midnight tale of friend…                      │
+│                            ││000000…002865 Last Signal 342     1983-10-19 2010   189     A quiet tale of friendshi…                      │
+│                            ││000000…0028a2 Midnight Signal 403 1998-08-21 2018   105     A midnight tale of friend…                      │
+│                            ││000000…0027e4 Quiet Story 213     2011-02-16 2016   73      A midnight tale of friend…                      │
+│                            ││000000…002797 Broken Garden 136   2008-11-09 2015   115     A electric tale of friend…                      │
+│                            ││000000…002787 Last World 120      2020-11-17 2020   185     A last tale of friendship…                      │
+│                            ││000000…0027a7 Unseen Dream 152    2020-04-08 2020   124     A wild tale of friendship…                      │
+│                            ││000000…002756 Broken River 71     2020-03-16 2018   186     A midnight tale of friend…                      │
+╰────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ⟨results⟩ j/k move · ⏎ detail · ‹ › cols · v view · e edit · n new · d delete · y copy · / query · : commands         mflix.movies · ● 3ms 

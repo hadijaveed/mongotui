@@ -1,0 +1,38 @@
+  ◆ mongotui · localhost:27017 · mflix.comments                                                                  : commands  ? help  q quit 
+  1:movies   2:users   3:users   4:comments ×  [ + ]                                                                                        
+╭─databases──────────────────╮╭─filter─────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│⌕ search collections… /     ││{ field: value }                                                                       find · agg  ▾ options│
+│ ▸ admin (0)                │╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│ ▸ config (0)               │╭─comments · ~1000 matched · 1ms─────────────────────────────────────────────────────────────────────────────╮
+│ ▸ local (1)                ││[ Documents ] [ Table ]                                                             1–50 of 1000 · page 1/20│
+│ ▾ mflix (4)                ││email                name             date                     text                           ‹ cols 2–5/6 ›│
+│   movies                500││viewer1@example.com  Avery Patel      2024-01-16T04:06:00.000Z Comment 1: Worth watchi…                    █│
+│▎  directors              50││viewer2@example.com  Nora Diaz        2018-05-04T20:50:00.000Z Comment 2: Loved it.                        █│
+│   comments               1k││viewer3@example.com  Hiro Sato        2016-10-08T01:13:00.000Z Comment 3: Beautifully …                    █│
+│   users                 100││viewer4@example.com  Fatima Diaz      2021-11-09T10:45:00.000Z Comment 4: Worth watchi…                    █│
+│ ▸ mongotui_conn_test (1)   ││viewer5@example.com  Mateo Diaz       2020-08-20T12:46:00.000Z Comment 5: Great cast.                      █│
+│                            ││viewer6@example.com  Mateo Kim        2013-12-01T20:23:00.000Z Comment 6: Loved it.                        █│
+│                            ││viewer7@example.com  Fatima Williams  2019-12-05T06:20:00.000Z Comment 7: Worth watchi…                    █│
+│                            ││viewer8@example.com  Fatima Williams  2020-04-09T10:40:00.000Z Comment 8: Surprising e…                    █│
+│                            ││viewer9@example.com  Fatima Patel     2023-11-24T00:19:00.000Z Comment 9: Surprising e…                    █│
+│                            ││viewer10@example.com Avery Diaz       2021-04-17T06:51:00.000Z Comment 10: Loved it.                       █│
+│                            ││viewer11@example.com Elena Okafor     2024-03-17T11:21:00.000Z Comment 11: Worth watch…                    █│
+│                            ││viewer12@example.com Leila Chen       2016-06-07T13:34:00.000Z Comment 12: Worth watch…                    █│
+│                            ││viewer13@example.com Mateo Sato       2012-06-21T08:04:00.000Z Comment 13: Surprising …                    █│
+│                            ││viewer14@example.com Nora Ibrahim     2025-06-21T02:54:00.000Z Comment 14: Surprising …                    █│
+│                            ││viewer15@example.com Avery Chen       2012-04-03T00:49:00.000Z Comment 15: Worth watch…                     │
+│                            ││viewer16@example.com Cameron Bennett  2017-02-28T21:15:00.000Z Comment 16: Worth watch…                     │
+│                            ││viewer17@example.com Hiro Chen        2021-10-19T09:00:00.000Z Comment 17: Surprising …                     │
+│                            ││viewer18@example.com Elena Okafor     2017-03-04T12:18:00.000Z Comment 18: Beautifully…                     │
+│                            ││viewer19@example.com Fatima Williams  2011-04-07T03:28:00.000Z Comment 19: Great cast.                      │
+│                            ││viewer20@example.com Leila Okafor     2015-06-17T20:54:00.000Z Comment 20: Great cast.                      │
+│                            ││viewer21@example.com Avery Laurent    2014-02-20T15:32:00.000Z Comment 21: Surprising …                     │
+│                            ││viewer22@example.com Cameron Diaz     2018-02-15T01:25:00.000Z Comment 22: Loved it.                        │
+│                            ││viewer23@example.com Hiro Okafor      2012-12-21T22:02:00.000Z Comment 23: Worth watch…                     │
+│                            ││viewer24@example.com Cameron Williams 2016-06-04T08:04:00.000Z Comment 24: Worth watch…                     │
+│                            ││viewer25@example.com Elena Williams   2024-09-28T08:48:00.000Z Comment 25: Worth watch…                     │
+│                            ││viewer26@example.com Cameron Kim      2010-05-23T16:26:00.000Z Comment 26: Beautifully…                     │
+│                            ││viewer27@example.com Dev Williams     2012-05-25T16:34:00.000Z Comment 27: Beautifully…                     │
+│                            ││viewer28@example.com Nora Chen        2010-07-13T07:08:00.000Z Comment 28: Worth watch…                     │
+╰────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ⟨results⟩ theme: tokyonight                                                                                         mflix.comments · ● 3ms 

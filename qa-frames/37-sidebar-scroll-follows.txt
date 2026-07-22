@@ -1,0 +1,38 @@
+  ◆ mongotui · localhost:27017 · mflix.directors                                                                 : commands  ? help  q quit 
+  1:movies   2:users   3:users   4:directors ×  [ + ]                                                                                       
+╭─databases──────────────────╮╭─filter─────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│⌕ search collections… /     ││{ field: value }                                                                       find · agg  ▾ options│
+│   qa_coll_029            · │╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│   qa_coll_long_name_pa4.2k │╭─directors · ~50 matched · 4ms──────────────────────────────────────────────────────────────────────────────╮
+│   qa_coll_031            · ││[ Documents ] [ Table ]                                                                1–50 of 50 · page 1/1│
+│   qa_coll_032         4.5k ││_id           name            born   country                                                                │
+│   qa_coll_long_name_paddi· ││000000…0003e8 Avery Bennett   1957   Canada                                                                █│
+│   qa_coll_034         4.8k ││000000…0003e9 Cameron Bennett 1972   South Korea                                                           █│
+│   qa_coll_035            · ││000000…0003ea Dev Bennett     1952   Canada                                                                █│
+│   qa_coll_long_name_pa5.1k ││000000…0003eb Elena Bennett   1976   United States                                                         █│
+│   qa_coll_037            · ││000000…0003ec Fatima Bennett  1978   United States                                                         █│
+│   qa_coll_038         5.3k ││000000…0003ed Hiro Bennett    1969   Canada                                                                █│
+│   qa_coll_long_name_paddi·▄││000000…0003ee Jordan Bennett  1983   India                                                                 █│
+│   qa_coll_040         5.6k ││000000…0003ef Leila Bennett   1971   United States                                                         █│
+│   qa_coll_041            · ││000000…0003f0 Mateo Bennett   1956   South Korea                                                           █│
+│   qa_coll_long_name_pa5.9k ││000000…0003f1 Nora Bennett    1980   United Kingdom                                                        █│
+│   qa_coll_043            · ││000000…0003f2 Avery Chen      1960   United Kingdom                                                        █│
+│   qa_coll_044         6.2k ││000000…0003f3 Cameron Chen    1959   Japan                                                                 █│
+│   qa_coll_long_name_paddi· ││000000…0003f4 Dev Chen        1958   Japan                                                                 █│
+│   qa_coll_046         6.4k ││000000…0003f5 Elena Chen      1957   Japan                                                                 █│
+│   qa_coll_047            · ││000000…0003f6 Fatima Chen     1983   India                                                                  │
+│   qa_coll_long_name_pa6.7k ││000000…0003f7 Hiro Chen       1960   France                                                                 │
+│   qa_coll_049            · ││000000…0003f8 Jordan Chen     1977   France                                                                 │
+│   qa_coll_050           7k ││000000…0003f9 Leila Chen      1958   Germany                                                                │
+│   qa_coll_long_name_paddi· ││000000…0003fa Mateo Chen      1986   Nigeria                                                                │
+│   qa_coll_052         7.3k ││000000…0003fb Nora Chen       1943   Germany                                                                │
+│   qa_coll_053            · ││000000…0003fc Avery Diaz      1954   Nigeria                                                                │
+│   qa_coll_long_name_pa7.5k ││000000…0003fd Cameron Diaz    1962   Japan                                                                  │
+│   qa_coll_055            · ││000000…0003fe Dev Diaz        1973   United States                                                          │
+│   qa_coll_056         7.8k ││000000…0003ff Elena Diaz      1935   Canada                                                                 │
+│   qa_coll_long_name_paddi· ││000000…000400 Fatima Diaz     1982   Japan                                                                  │
+│   qa_coll_058         8.1k ││000000…000401 Hiro Diaz       1976   India                                                                  │
+│   qa_coll_059            · ││000000…000402 Jordan Diaz     1959   Argentina                                                              │
+│▎  qa_coll_long_name_pa8.4k ││000000…000403 Leila Diaz      1982   Japan                                                                  │
+╰────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ⟨sidebar⟩ ✓ qa-local reachable · 1ms                                                                               mflix.directors · ● 3ms 

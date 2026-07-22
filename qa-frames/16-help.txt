@@ -1,0 +1,38 @@
+  ◆ mongotui · localhost:27017 · mflix.movies                                                                    : commands  ? help  q quit 
+  1:movies ×  [ + ]                                                                                                [o] new tab from sidebar 
+╭─databases──────────────────╮╭╔════════════════════════════════════════════════════════════════════════════╗──────────────────────────────╮
+│⌕ search collections… /     ││║                                                                            ║         find · agg  ▾ options│
+│ ▸ admin                    │╰║ mongotui · keys                                                            ║──────────────────────────────╯
+│ ▸ config                   │╭║ Global                                        Results                      ║──────────────────────────────╮
+│ ▸ local                    ││║ :           command palette (or ⌃k / ⌃p)      j / k       move             ║       1–50 of 500 · page 1/10│
+│ ▾ mflix (4)                ││║ tab         cycle pane focus                  enter       open document    ║               ‹ cols 1–6/20 ›│
+│▎  movies                500││║ 1 / 2 / 3   focus sidebar / query / results   v           toggle view      ║iendsh…                       │
+│   directors              50││║ /           focus query or sidebar filter     h / l       prev / next page ║iendsh…                       │
+│   comments               1k││║ esc         back out one level                < / >       scroll columns   ║ndship…                       │
+│   users                 100││║ ?           this help                         Documents                    ║iendsh…                       │
+│ ▸ mongotui_conn_test       ││║ R           reload tree / page                space       fold / unfold    ║iendsh…                       │
+│                            ││║ E           explain query                     J / K       next / prev doc  ║endshi…                       │
+│                            ││║ ,           theme picker                      g / G       top / bottom     ║iendsh…                      █│
+│                            ││║ C           connections                       Editing                      ║ndship…                       │
+│                            ││║ q           quit                              e           edit selected    ║iendsh…                       │
+│                            ││║ Tabs                                          c           clone            ║iendsh…                       │
+│                            ││║ o           open collection in new tab        n           new              ║ndship…                       │
+│                            ││║ T           duplicate current tab             d           delete           ║iendsh…                       │
+│                            ││║ X           close current tab                 y           copy as EJSON    ║friend…                       │
+│                            ││║ [ / ]       prev / next tab                                                ║iendsh…                       │
+│                            ││║ Sidebar                                                                    ║endshi…                       │
+│                            ││║ j / k       move                                                           ║friend…                       │
+│                            ││║ enter / l   expand db / open collection                                    ║ndship…                       │
+│                            ││║ h           collapse                                                       ║ndship…                       │
+│                            ││║ g / G       top / bottom                                                   ║iendsh…                       │
+│                            ││║ /           filter                                                         ║iendsh…                       │
+│                            ││║ Query                                                                      ║endshi…                       │
+│                            ││║ enter       run find / pipeline                                            ║iendsh…                       │
+│                            ││║ tab / ▾     show / cycle options                                           ║ndship…                       │
+│                            ││║ A           toggle find / aggregate                                        ║ndship…                       │
+│                            ││║ esc         back to filter / results                                       ║ndship…                       │
+│                            ││║ ↑ / ↓       history recall                                                 ║friend…                       │
+│                            ││║ esc close                                                                  ║endshi…                       │
+│                            ││║                                                                            ║friend…                       │
+╰────────────────────────────╯╰╚════════════════════════════════════════════════════════════════════════════╝──────────────────────────────╯
+ ⟨results⟩ sort: unexpected token — fix or clear it                                                                    mflix.movies · ● 3ms 

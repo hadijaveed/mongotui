@@ -64,9 +64,10 @@ describe("mongotui ui", () => {
     const t = await testRender(<App />, { width: 120, height: 36 });
     await t.waitFor(() => Boolean(useStore.getState().tree.collectionsByDb.mflix) || sidebarRows(useStore.getState().tree).some((r) => r.db === "mflix"));
 
-    // ensure a collection is open
+    // ensure a collection is open, in the table view this test asserts against
     await useStore.getState().openCollection({ db: "mflix", coll: "movies" });
     await t.waitFor(() => useStore.getState().results.docs.length > 0, { maxPasses: 200 });
+    useStore.getState().setView("table");
 
     useStore.getState().setFocus("results");
     await t.mockInput.pressKey("/"); // focus query filter

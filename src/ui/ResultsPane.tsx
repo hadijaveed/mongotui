@@ -59,12 +59,12 @@ export function ResultsPane({ focused }: { focused: boolean }): React.ReactNode 
       style={{ flexGrow: 1, flexDirection: "column", backgroundColor: T.panel }}
     >
       <box style={{ height: 1, flexDirection: "row" }}>
-        <box onMouseDown={() => useStore.getState().setView("table")}>
-          <text><span fg={results.view === "table" ? T.focus : T.dim}>[ Table ]</span></text>
-        </box>
-        <text> </text>
         <box onMouseDown={() => useStore.getState().setView("docs")}>
           <text><span fg={results.view === "docs" ? T.focus : T.dim}>[ Documents ]</span></text>
+        </box>
+        <text> </text>
+        <box onMouseDown={() => useStore.getState().setView("table")}>
+          <text><span fg={results.view === "table" ? T.focus : T.dim}>[ Table ]</span></text>
         </box>
         {results.view === "detail" ? (
           <text>

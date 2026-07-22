@@ -5,7 +5,14 @@
 import { useStore } from "../state/store.ts";
 import { createMongoService } from "../data/service.ts";
 import { loadConfig, normalizeUri, saveConfig, type SavedConnection } from "../config.ts";
+import { deleteSecret, getSecret, joinCredentials, secretsError, splitCredentials, storeSecretVerified } from "../secrets.ts";
 import { applyTheme, T, themeNames } from "./theme.ts";
+
+/** Resolve a saved (password-stripped) connection URI to a live URI with its secret re-attached. */
+function resolveUri(name: string, storedUri: string): string {
+  const secret = getSecret(name);
+  return secret ? joinCredentials(storedUri, secret) : storedUri;
+}
 
 function msg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -143,14 +150,15 @@ export async function connTestSelected(): Promise<void> {
   const c = savedConnections()[m.sel];
   if (!c) return;
   s.toast(`testing ${c.name}…`, T.dim);
-  const probe = createMongoService(c.uri);
+  let probe: ReturnType<typeof createMongoService> | null = null;
   try {
+    probe = createMongoService(resolveUri(c.name, c.uri));
     const info = await probe.connect();
     s.toast(`✓ ${c.name} reachable · ${Math.round(info.latencyMs ?? 0)}ms`, T.accent);
   } catch (e) {
     s.toast(`✗ ${c.name}: ${msg(e)}`, T.red);
   } finally {
-    try { await probe.close(); } catch { /* ignore */ }
+    try { await probe?.close(); } catch { /* ignore */ }
   }
 }
 
@@ -162,7 +170,7 @@ export async function connConnectSelected(): Promise<void> {
   const c = list[m.sel];
   if (!c) return;
   s.setConnModal(null);
-  await s.switchConnection(c.name, c.uri);
+  await s.switchConnection(c.name, resolveUri(c.name, c.uri));
 }
 
 export function connDeleteSelected(): void {
@@ -174,6 +182,7 @@ export function connDeleteSelected(): void {
   if (!c) return;
   const rest = list.filter((_, i) => i !== m.sel);
   saveConfig({ connections: rest });
+  deleteSecret(c.name);
   s.setConnModal({ ...m, sel: Math.max(0, Math.min(m.sel, rest.length - 1)) });
   s.toast(`deleted ${c.name}`, T.dim);
 }
@@ -188,17 +197,34 @@ export async function connSubmitAdd(): Promise<void> {
     s.setConnModal({ ...m, error: "name and uri are required" });
     return;
   }
-  const probe = createMongoService(uri);
+  let probe: ReturnType<typeof createMongoService> | null = null;
   try {
+    probe = createMongoService(uri); // constructor throws on malformed URIs
     await probe.connect();
   } catch (e) {
-    try { await probe.close(); } catch { /* ignore */ }
+    try { await probe?.close(); } catch { /* ignore */ }
     s.setConnModal({ ...m, error: msg(e) });
     return;
   }
   try { await probe.close(); } catch { /* ignore */ }
+  // Persist the URI password-stripped; the password goes to the secret store
+  // under the (unique) connection name. The live session still uses the full URI.
+  const { uri: strippedUri, password } = splitCredentials(uri);
+  if (password !== null) {
+    // Store-then-read verification: a backend that silently drops the secret
+    // must not lead to a saved-but-unusable (or plaintext) connection. On
+    // failure, nothing is persisted — the live session still connects.
+    if (!storeSecretVerified(name, password)) {
+      s.setConnModal(null);
+      s.toast(`${secretsError() ?? "secret store not working"} — connection NOT saved (this session still connects)`, T.red);
+      await s.switchConnection(name, uri);
+      return;
+    }
+  } else {
+    deleteSecret(name); // clear any stale secret from a prior password
+  }
   const list = savedConnections().filter((c) => c.name !== name);
-  list.push({ name, uri });
+  list.push({ name, uri: strippedUri });
   saveConfig({ connections: list, lastConnection: name });
   s.setConnModal(null);
   await s.switchConnection(name, uri);

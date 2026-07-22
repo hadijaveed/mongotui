@@ -109,6 +109,22 @@ export function cellText(value: unknown, maxLen: number): string {
   return truncate(preview(value).replace(/\s*[\r\n]+\s*/g, " "), maxLen);
 }
 
+/**
+ * Make an arbitrary identifier (collection / db name) safe to render in a single
+ * terminal row. MongoDB collection names can contain control chars, newlines and
+ * carriage returns — a raw `\r` resets the terminal cursor and blanks the row,
+ * and long names overflow into neighboring columns. Strip control chars, collapse
+ * whitespace, and truncate. Display-only — the real name is still used to query.
+ */
+export function sanitizeLabel(name: string, maxLen = 40): string {
+  const clean = name
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, "") // control chars (incl. CR LF TAB) that break a row
+    .replace(/\s+/g, " ")
+    .trim();
+  return truncate(clean, maxLen);
+}
+
 export function docToEditable(doc: Record<string, unknown>): string {
   return toShellString(doc);
 }

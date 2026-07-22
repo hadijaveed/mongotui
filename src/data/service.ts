@@ -45,6 +45,7 @@ function shortError(error: unknown): string {
   return (raw.split(/\r?\n/, 1)[0]?.trim() || "operation failed")
     .replace(/^Unexpected/, "unexpected")
     .replace(/\s+in\s+\(.*$/, "") // drop the parser's source-snippet tail
+    .replace(/\s*\(\d+:\d+\)/, "") // parser line:col is against its own wrapped source, not the user's text
     .replace(/\s+/g, " ");
 }
 
@@ -67,11 +68,38 @@ function parseObject(
   return value;
 }
 
+const JS_OPERATORS = new Set(["$where", "$function", "$accumulator"]);
+
+/**
+ * Server-side JavaScript operators execute on the DATABASE — against a
+ * production server that's a CPU/DoS hazard, so they are rejected unless
+ * explicitly enabled with MONGOTUI_ALLOW_JS=1.
+ */
+export function findBannedJsOperator(value: unknown): string | null {
+  if (process.env.MONGOTUI_ALLOW_JS === "1") return null;
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      const hit = findBannedJsOperator(v);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  if (!isObject(value)) return null;
+  for (const [k, v] of Object.entries(value)) {
+    if (JS_OPERATORS.has(k)) return k;
+    const hit = findBannedJsOperator(v);
+    if (hit) return hit;
+  }
+  return null;
+}
+
 function validationError(field: QueryField, text: string): string | undefined {
   if (text.trim() === "") return undefined;
   try {
     if (field === "filter") {
-      parseObject(text, QUERY_PARSER.parseFilter, QUERY_PARSER.isFilterValid);
+      const parsed = parseObject(text, QUERY_PARSER.parseFilter, QUERY_PARSER.isFilterValid);
+      const banned = findBannedJsOperator(parsed);
+      if (banned) throw new Error(`${banned} runs JS on the server — disabled (MONGOTUI_ALLOW_JS=1 to enable)`);
     } else if (field === "project") {
       parseObject(text, QUERY_PARSER.parseProject, QUERY_PARSER.isProjectValid);
     } else if (field === "sort") {
@@ -373,6 +401,9 @@ export function createMongoService(uri: string): MongoService {
     },
 
     async updateDocument(ns: Namespace, id: unknown, diff: DocDiff): Promise<void> {
+      // BSON serializes { _id: undefined } as {} — updateOne({}) would silently
+      // hit the FIRST document in the collection. Refuse anything id-less.
+      if (id === undefined || id === null) throw new Error("document has no _id (projected out?) — cannot update");
       return withConnection("update document failed", async () => {
         const update: Record<string, unknown> = {};
         if (Object.keys(diff.set).length) update.$set = diff.set;
@@ -384,6 +415,8 @@ export function createMongoService(uri: string): MongoService {
     },
 
     async deleteDocument(ns: Namespace, id: unknown): Promise<void> {
+      // Same footgun as updateDocument: deleteOne({ _id: undefined }) === deleteOne({}).
+      if (id === undefined || id === null) throw new Error("document has no _id (projected out?) — cannot delete");
       return withConnection("delete document failed", async () => {
         const result = await client.db(ns.db).collection(ns.coll).deleteOne({ _id: id } as Filter<Document>);
         if (!result.deletedCount) throw new Error("document not found");

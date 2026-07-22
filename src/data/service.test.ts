@@ -94,3 +94,21 @@ describe("Mongo service integration", () => {
   });
 });
 
+
+describe("write-safety guards (adversarial-review fixes)", () => {
+  test("updateDocument refuses an undefined _id (would match ANY document)", async () => {
+    await expect(
+      service.updateDocument({ db: DB, coll: "movies" }, undefined, { set: { x: 1 }, unset: [] }),
+    ).rejects.toThrow(/no _id/);
+  });
+
+  test("deleteDocument refuses an undefined _id", async () => {
+    await expect(service.deleteDocument({ db: DB, coll: "movies" }, undefined)).rejects.toThrow(/no _id/);
+  });
+
+  test("$where is rejected in filter validation unless MONGOTUI_ALLOW_JS=1", () => {
+    const v = service.validateQuery({ filter: '{ $where: "sleep(1000)" }', project: "", sort: "", collation: "", hint: "", skip: "", limit: "", maxTimeMS: "" });
+    expect(v.filter.valid).toBe(false);
+    expect(v.filter.error).toMatch(/JS on the server/);
+  });
+});

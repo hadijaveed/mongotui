@@ -48,10 +48,13 @@ fi
 asset="${BIN_NAME}-${os}-${arch}.${ext}"
 
 # --- resolve download URL --------------------------------------------------
+sums="${BIN_NAME}-${os}-${arch}.sha256"
 if [ "$VERSION" = "latest" ]; then
   url="https://github.com/${REPO}/releases/latest/download/${asset}"
+  sums_url="https://github.com/${REPO}/releases/latest/download/${sums}"
 else
   url="https://github.com/${REPO}/releases/download/${VERSION}/${asset}"
+  sums_url="https://github.com/${REPO}/releases/download/${VERSION}/${sums}"
 fi
 
 # --- pick a fetch tool -----------------------------------------------------
@@ -80,6 +83,29 @@ trap 'rm -rf "$tmp"' EXIT
 info "downloading ${BIN_NAME} (${os}-${arch}, ${VERSION}) from ${REPO}"
 fetch "$url" "$tmp/${asset}" || err "download failed: $url
 (check that release ${VERSION} exists and has asset ${asset}; or set MONGOTUI_REPO)"
+
+# --- verify the published SHA-256 before touching the payload --------------
+if command -v sha256sum >/dev/null 2>&1; then
+  sha() { sha256sum "$1"; }
+elif command -v shasum >/dev/null 2>&1; then
+  sha() { shasum -a 256 "$1"; }
+else
+  sha() { :; }
+fi
+fetch "$sums_url" "$tmp/${sums}" || err "checksum download failed: $sums_url"
+expected=$(awk -v f="$asset" '$2 == f || $2 == "*"f { print $1; exit }' "$tmp/${sums}")
+[ -n "$expected" ] || err "no checksum entry for ${asset} in ${sums}"
+actual=$(sha "$tmp/${asset}" | awk '{ print $1 }')
+if [ -z "$actual" ]; then
+  printf '\033[33mnote:\033[0m no sha256sum/shasum found — skipping integrity check\n'
+elif [ "$actual" != "$expected" ]; then
+  err "checksum mismatch for ${asset}
+expected: $expected
+actual:   $actual
+(the download may be corrupted or tampered with — not installing)"
+else
+  info "checksum verified"
+fi
 
 info "unpacking"
 decompress "$tmp/${asset}" > "$tmp/${BIN_NAME}" || err "decompress (${ext}) failed"

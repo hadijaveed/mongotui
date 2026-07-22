@@ -7,6 +7,7 @@ import { testRender } from "@opentui/react/test-utils";
 import { createMongoService } from "../src/data/service.ts";
 import { initStore, teardownStore, useStore } from "../src/state/store.ts";
 import { sidebarRows } from "../src/ui/Sidebar.tsx";
+import { suggestVisible } from "../src/ui/QueryBar.tsx";
 import { openConnections } from "../src/ui/actions.ts";
 import { saveConfig } from "../src/config.ts";
 import { App } from "../src/ui/App.tsx";
@@ -58,7 +59,74 @@ await until("colls", () => Boolean(useStore.getState().tree.collectionsByDb.mfli
 useStore.getState().sidebarTo(sidebarRows(useStore.getState().tree).findIndex((r) => r.coll === "movies"));
 t.mockInput.pressEnter();
 await until("docs", () => useStore.getState().results.docs.length > 0, 300);
+// The default view is now Documents; most scenarios below exercise the Table
+// view, so switch to it explicitly (a dedicated scenario checks the default +
+// persistence separately).
+console.error(`default view on open: ${useStore.getState().results.view} (expect docs)`);
+useStore.getState().setView("table");
+await t.renderOnce();
 await snap("table-unfiltered");
+
+// ---- AUTOCOMPLETE: $operators + field-name suggestions in the query bar ----
+{
+  const tick = async (): Promise<void> => { await t.renderOnce(); await sleep(30); await t.renderOnce(); };
+  // Field suggestions come from the sampled schema — wait for it.
+  await until("ac-schema", () => (useStore.getState().results.schema?.fields ?? []).some((f) => f.path === "year"), 300);
+
+  useStore.getState().setFocus("results");
+  await t.mockInput.pressKey("/"); // focus the (empty) filter field
+  await until("ac-query-focus", () => useStore.getState().ui.focusedPane === "query");
+  useStore.getState().setQueryField("filter", "", 0);
+  await tick();
+
+  // type `{ ye` → popup should suggest the `year` field
+  await t.mockInput.typeText("{ ye");
+  await tick();
+  const openFrame = t.captureCharFrame();
+  await snap("autocomplete-open");
+  console.error(`autocomplete popup-open: frameHasYear=${openFrame.includes("year")} suggestVisible=${suggestVisible(useStore.getState())}`);
+
+  // tab accepts the highlighted `year`
+  await t.mockInput.pressTab();
+  await tick();
+  console.error(`autocomplete tab-accept: filter="${useStore.getState().query.input.filter}" hasYear=${useStore.getState().query.input.filter.includes("year")}`);
+
+  // type `: { $g` → operator popup with $gt / $gte
+  await t.mockInput.typeText(": { $g");
+  await tick();
+  const opFrame = t.captureCharFrame();
+  console.error(`autocomplete operators: hasGt=${opFrame.includes("$gt")} hasGte=${opFrame.includes("$gte")} visible=${suggestVisible(useStore.getState())}`);
+
+  // enter ACCEPTS the operator (must NOT run the query) AND auto-collapses the popup
+  const docsBefore = useStore.getState().results.docs.length;
+  t.mockInput.pressEnter();
+  await tick();
+  const afterAccept = useStore.getState();
+  console.error(`autocomplete accept-enter: paneStillQuery=${afterAccept.ui.focusedPane === "query"} docsUnchanged=${afterAccept.results.docs.length === docsBefore} popupCollapsed=${!suggestVisible(afterAccept)} filter="${afterAccept.query.input.filter}"`);
+  await snap("autocomplete-accepted");
+
+  // re-open a popup, then esc dismisses it (must NOT leave the query pane)
+  await t.mockInput.typeText(" $l");
+  await tick();
+  const reopened = suggestVisible(useStore.getState());
+  await t.mockInput.pressEscape();
+  await tick();
+  const afterEsc = useStore.getState();
+  console.error(`autocomplete esc-dismiss: reopened=${reopened} pane=${afterEsc.ui.focusedPane} popupVisible=${suggestVisible(afterEsc)}`);
+
+  // with a known-good filter and no popup, enter DOES run (pane → results)
+  useStore.getState().setQueryField("filter", "{ year: { $gte: 2010 } }", 24);
+  useStore.getState().dismissSuggest();
+  await tick();
+  t.mockInput.pressEnter();
+  await until("ac-ran", () => useStore.getState().ui.focusedPane === "results", 300);
+  console.error(`autocomplete final-enter: pane=${useStore.getState().ui.focusedPane} filter="${useStore.getState().query.input.filter}"`);
+  // Reset to a clean slate so the following scenarios type into an empty filter.
+  useStore.getState().setQueryField("filter", "", 0);
+  useStore.getState().dismissSuggest();
+  useStore.getState().setFocus("results");
+  await tick();
+}
 
 // filter query
 useStore.getState().setFocus("results");
@@ -70,7 +138,10 @@ t.mockInput.pressEnter();
 await until("exact-count", () => useStore.getState().results.exactCount !== null, 300);
 await snap("table-filtered");
 
-// expanded options with sort
+// expanded options with sort (a run hands focus to results now — go back in
+// with `/` like a user would)
+await t.mockInput.pressKey("/");
+await until("query-refocus", () => useStore.getState().ui.focusedPane === "query");
 await t.mockInput.pressTab(); // expand → project
 await t.mockInput.pressTab(); // sort
 await t.mockInput.typeText('{ "imdb.rating": -1 }');
@@ -86,6 +157,8 @@ useStore.getState().setQueryField("filter", "{ year: { $gte: 2010 } }", 24);
 
 // invalid SORT + enter: must jump activeField to sort and show error in title
 useStore.getState().setQueryField("sort", "?", 1);
+useStore.getState().setFocus("query"); // enter must hit the query bar, not results
+await t.renderOnce();
 t.mockInput.pressEnter();
 await t.renderOnce();
 console.error(
@@ -205,8 +278,9 @@ t.mockInput.pressEnter();
 await until("agg-results", () => useStore.getState().results.aggregate && !useStore.getState().results.loading, 400);
 console.error(`aggregate: docs=${useStore.getState().results.docs.length} aggregate=${useStore.getState().results.aggregate}`);
 await snap("aggregate-results");
-await t.mockInput.pressEscape(); // leave pipeline editor
+// A successful run hands focus to results by itself now (no esc needed).
 await until("agg-results-focus", () => useStore.getState().ui.focusedPane === "results", 200);
+console.error(`post-run focus handoff: pane=${useStore.getState().ui.focusedPane}`);
 
 // ---- THEME: open picker, preview + keep tokyonight ----
 await t.mockInput.pressKey(","); // open theme picker

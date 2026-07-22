@@ -1,5 +1,5 @@
 import { spawnSync } from "child_process";
-import { writeFileSync, readFileSync, unlinkSync } from "fs";
+import { writeFileSync, readFileSync, mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { Buffer } from "buffer";
@@ -31,20 +31,25 @@ function capLines(lines: string[], cap: number): string[] {
 
 /** Suspend the TUI, open $EDITOR on a temp file, resume, return edited text. */
 function runEditor(initialText: string): { text: string; changed: boolean } {
-  const file = join(tmpdir(), `mongotui-${process.pid}-${tmpCounter++}.mongodb.js`);
-  writeFileSync(file, initialText, "utf8");
-  const renderer = getRenderer();
-  renderer.suspend();
+  // The temp file holds real (possibly production) document data: it lives in a
+  // private mkdtemp dir (0700), is created 0600 + O_EXCL, and the whole dir is
+  // removed afterwards — never a predictable world-readable /tmp path.
+  const dir = mkdtempSync(join(tmpdir(), "mongotui-edit-"));
+  const file = join(dir, `doc-${tmpCounter++}.mongodb.js`);
   try {
-    spawnSync(process.env.EDITOR ?? process.env.VISUAL ?? "vi", [file], { stdio: "inherit" });
+    writeFileSync(file, initialText, { encoding: "utf8", mode: 0o600, flag: "wx" });
+    const renderer = getRenderer();
+    renderer.suspend();
+    try {
+      spawnSync(process.env.EDITOR ?? process.env.VISUAL ?? "vi", [file], { stdio: "inherit" });
+    } finally {
+      renderer.resume();
+    }
+    const text = readFileSync(file, "utf8");
+    return { text, changed: text !== initialText };
   } finally {
-    renderer.resume();
+    rmSync(dir, { recursive: true, force: true });
   }
-  const text = readFileSync(file, "utf8");
-  try {
-    unlinkSync(file);
-  } catch { /* best effort */ }
-  return { text, changed: text !== initialText };
 }
 
 function selectedDoc(): Record<string, unknown> | null {
@@ -52,11 +57,19 @@ function selectedDoc(): Record<string, unknown> | null {
   return s.results.docs[s.results.selRow] ?? null;
 }
 
+function hasUsableId(doc: Record<string, unknown>): boolean {
+  return Object.hasOwn(doc, "_id") && doc._id !== undefined && doc._id !== null;
+}
+
 export function editSelectedDoc(): void {
   const doc = selectedDoc();
   const store = useStore.getState();
   if (!doc) {
     store.toast("no document selected", T.dim);
+    return;
+  }
+  if (!hasUsableId(doc)) {
+    store.toast("no _id in this result (projected out?) — re-run without { _id: 0 } to edit", T.red);
     return;
   }
   beginEdit(doc, docToEditable(doc));
@@ -175,6 +188,10 @@ export function deleteSelectedDoc(): void {
   const ns = store.ns;
   if (!doc || !ns) {
     store.toast("no document selected", T.dim);
+    return;
+  }
+  if (!hasUsableId(doc)) {
+    store.toast("no _id in this result (projected out?) — re-run without { _id: 0 } to delete", T.red);
     return;
   }
   store.setModal({

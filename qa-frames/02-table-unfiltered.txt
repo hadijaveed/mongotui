@@ -1,0 +1,38 @@
+  ◆ mongotui · localhost:27017 · mflix.movies                                                                    : commands  ? help  q quit 
+  1:movies ×  [ + ]                                                                                                [o] new tab from sidebar 
+╭─databases──────────────────╮╭─filter─────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│⌕ search collections… /     ││{ field: value }                                                                       find · agg  ▾ options│
+│ ▸ admin                    │╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│ ▸ config                   │╭─movies · ~500 matched · 3ms────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ local                    ││[ Documents ] [ Table ]                                                              1–50 of 500 · page 1/10│
+│ ▾ mflix (4)                ││_id           title              released   year   runtime plot                              ‹ cols 1–6/20 ›│
+│▎  movies                500││000000…002710 Midnight City 1    1991-10-24 1993   128     —                                               █│
+│   directors              50││000000…002711 Lost Garden 2      2013-07-17 1997   90      —                                                │
+│   comments               1k││000000…002712 Hidden Dream 3     2016-10-17 2024   190     —                                                │
+│   users                 100││000000…002713 Broken Dream 4     2010-10-27 1998   88      A lost tale of friendship…                       │
+│ ▸ mongotui_conn_test       ││000000…002714 Silver Sky 5       1998-10-07 2008   188     A silver tale of friendsh…                       │
+│                            ││000000…002715 Silver City 6      2021-02-01 1995   73      A unseen tale of friendsh…                       │
+│                            ││000000…002716 Silver Light 7     2021-09-13 1996   89      A hidden tale of friendsh…                       │
+│                            ││000000…002717 Broken Signal 8    1998-07-25 2018   124     A lost tale of friendship…                       │
+│                            ││000000…002718 Lost Journey 9     1997-10-12 2004   119     A unseen tale of friendsh…                       │
+│                            ││000000…002719 Wild Signal 10     2005-10-25 1985   91      A broken tale of friendsh…                       │
+│                            ││000000…00271a Wild Story 11      1987-03-22 1972   136     A quiet tale of friendshi…                       │
+│                            ││000000…00271b Quiet River 12     1981-05-06 1984   94      A unseen tale of friendsh…                       │
+│                            ││000000…00271c Unseen World 13    2003-10-25 1992   163     A wild tale of friendship…                       │
+│                            ││000000…00271d Quiet Story 14     1982-04-21 2021   109     A hidden tale of friendsh…                       │
+│                            ││000000…00271e Unseen Story 15    1995-05-14 2017   163     A silver tale of friendsh…                       │
+│                            ││000000…00271f Hidden Light 16    2020-09-08 2024   168     A wild tale of friendship…                       │
+│                            ││000000…002720 Wild City 17       1980-12-28 1983   173     A hidden tale of friendsh…                       │
+│                            ││000000…002721 Broken Signal 18   2001-05-05 1971   182     A midnight tale of friend…                       │
+│                            ││000000…002722 Lost Dream 19      1970-09-13 1995   129     A unseen tale of friendsh…                       │
+│                            ││000000…002723 Last Light 20      1998-09-13 1991   149     A quiet tale of friendshi…                       │
+│                            ││000000…002724 Lost City 21       1970-04-19 2017   189     A midnight tale of friend…                       │
+│                            ││000000…002725 Hidden Signal 22   2009-12-07 1973   108     A last tale of friendship…                       │
+│                            ││000000…002726 Hidden World 23    2014-08-07 1991   134     A last tale of friendship…                       │
+│                            ││000000…002727 Silver Sky 24      2003-06-06 1971   149     A hidden tale of friendsh…                       │
+│                            ││000000…002728 Silver City 25     2017-03-13 2006   90      A hidden tale of friendsh…                       │
+│                            ││000000…002729 Lost Sky 26        1989-07-07 2007   117     A quiet tale of friendshi…                       │
+│                            ││000000…00272a Electric Light 27  1988-06-10 2004   102     A hidden tale of friendsh…                       │
+│                            ││000000…00272b Wild Garden 28     2010-04-09 2012   190     A last tale of friendship…                       │
+╰────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ⟨results⟩ j/k move · ⏎ detail · ‹ › cols · v view · e edit · n new · d delete · y copy · / query · : commands         mflix.movies · ● 3ms 

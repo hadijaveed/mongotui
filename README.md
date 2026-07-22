@@ -90,7 +90,8 @@ the schema is already sampled per collection, so it can be layered onto this sam
 > the `Ctrl+K` byte (`0x0b`): iTerm2 → *Preferences → Keys → Key Mappings → +*, action
 > *Send Hex Code* `0x0b`; Ghostty → `keybind = cmd+k=text:\x0b` in `config`.
 
-In the query bar: `enter` runs, `↑` recalls history. `esc` steps back one level — from an
+In the query bar: `enter` runs the query and drops you into the results so `j`/`k`
+browse rows immediately (`/` or `2` returns to the bar); `↑` recalls history. `esc` steps back one level — from an
 option field to the filter row, then from the filter row out to the results — so you're
 never trapped cycling fields. At the right of the bar a `find · agg` toggle and a
 `▾ options` button are always visible: click `agg` (or press `A`) to switch to an
@@ -119,8 +120,12 @@ terminal's own background / foreground and ANSI palette), `tokyonight`, `catppuc
 `gruvbox`, `nord`, `dracula`, `one-dark`, `kanagawa`.
 
 Config is stored at `~/.config/mongotui/config.json` (honoring `XDG_CONFIG_HOME`):
-`{ theme, connections: [{ name, uri }], lastConnection }`. Missing or corrupt config is
-treated as empty, never fatal.
+`{ theme, connections: [{ name, uri }], lastConnection, defaultView }`. Missing or corrupt
+config is treated as empty, never fatal.
+
+Results open in the **Documents** card view by default; `v` (or the `[ Documents ] [ Table ]`
+toggle) switches to the Table view, and your choice is remembered (`defaultView`) across
+collections, tabs and restarts.
 
 ## Connections
 
@@ -134,6 +139,57 @@ tree, tabs and results reset to the new server; on failure the previous connecti
 working. Boot order: explicit URI arg > `MONGOTUI_URI` > `lastConnection` from config >
 `mongodb://localhost:27017`. With no reachable default the app still starts in a
 "not connected — press C" empty state instead of exiting.
+
+## Security
+
+Passwords are **never** written to `config.json`. Saved connection URIs and `lastConnection`
+are stored password-stripped (`mongodb://user@host/db`); the password itself goes to an OS
+secret store, auto-detected in this order:
+
+1. **macOS keychain** via the `security` CLI (`-s mongotui -a <connection-name>`).
+2. **Linux libsecret** via `secret-tool` — used only when the binary is present and working.
+3. **Encrypted file** `<configdir>/credentials.enc` — the fallback when no keyring exists
+   (typically a headless server). AES-256-GCM per entry, keyed by
+   `scrypt(machineId + a random per-install salt)`, always written **mode 0600** via an
+   atomic temp-file+rename (a crash can't truncate it; a symlinked path is replaced, not
+   followed).
+
+   **Threat model — read this if you run headless.** The encrypted file protects against
+   *casual* disclosure: another user reading your files (blocked by 0600), a config that
+   gets synced/backed up/`scp`'d, or a shoulder-surfed `config.json`. It does **not** protect
+   against an attacker who has both the file *and* the machine id (which is not secret —
+   `/etc/machine-id` is world-readable and often travels in the same backup). If that's your
+   threat model, use a box with a real keyring, or don't save the password: pass the URI at
+   launch (kept in memory only, never persisted) or set it in `MONGOTUI_URI`. No local-only
+   scheme — keychains included — survives an attacker who already has a shell as your user.
+
+Set `MONGOTUI_SECRETS=keychain|libsecret|file` to force a backend (useful for CI/tests). The
+connections manager (`C`) shows the active backend in its footer (`secrets: …`). Saving a
+connection **verifies** the secret store round-trips (store-then-read) before stripping the
+password from config — if the store is broken (e.g. `secret-tool` present but no D-Bus
+session), the connection is **not saved** and you're told, rather than silently losing the
+password or leaving it in plaintext. On first run after upgrading, any password still
+embedded in an existing `config.json` is migrated automatically (also verified) and the
+config is rewritten stripped; migration reports failure instead of false success if the
+store or the rewrite doesn't stick.
+
+Server-side JavaScript operators (`$where`, `$function`, `$accumulator`) execute on the
+database and are a CPU/DoS hazard against production — they are **rejected by default** in
+both filters and pipelines. Set `MONGOTUI_ALLOW_JS=1` to permit them knowingly.
+
+A launch URI with a password (`mongotui mongodb://user:pass@host`) is visible in `ps` to
+other users of the box for the life of the process — prefer a saved connection or
+`MONGOTUI_URI` on a shared host. Connect errors are printed/toasted password-redacted.
+
+## Autocomplete
+
+While typing a query, a Compass-style popup suggests MongoDB `$operators` and the current
+collection's sampled field names. `↑` / `↓` move the selection, `tab` or `enter` accepts the
+highlighted suggestion (enter does **not** run the query while the popup is open), and `esc`
+dismisses it (a second `enter` then runs as usual). In aggregate mode the popup also offers
+pipeline stages (`$match`, `$group`, …) and accumulators. Constructor snippets are included:
+accepting `ObjectId('…')` or `ISODate('…')` inserts empty quotes with the cursor already
+inside them — type `{ _id: Obj`, hit `tab`, paste the id, run.
 
 ## Aggregation
 

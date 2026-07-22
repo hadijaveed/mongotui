@@ -3,6 +3,7 @@ import type { ScrollBoxRenderable } from "@opentui/core";
 import { useStore, type StoreState } from "../state/store.ts";
 import { T } from "./theme.ts";
 import { LineEditor } from "./LineEditor.tsx";
+import { sanitizeLabel } from "../data/format.ts";
 
 export interface SidebarRow {
   type: "db" | "coll";
@@ -79,7 +80,7 @@ export function Sidebar({ focused }: { focused: boolean }): React.ReactNode {
       {/* Always-visible search box: `/` (or a click) searches collections across
           every database, not just the ones you've expanded. */}
       <box
-        style={{ height: 1, flexDirection: "row" }}
+        style={{ height: 1, flexDirection: "row", backgroundColor: searching ? T.selBg : undefined }}
         onMouseDown={() => useStore.getState().setSidebarFilterMode(true)}
       >
         <text><span fg={searching ? T.focus : T.dim}>{"⌕ "}</span></text>
@@ -153,12 +154,14 @@ function SidebarRowView({ id, row, selected, expanded, loading, collCount, estCo
     const count = collCount !== null ? ` (${collCount})` : loading ? " …" : "";
     name = (
       <>
-        <span fg={T.text}>{`${marker} ${row.db}`}</span>
+        <span fg={T.text}>{`${marker} ${sanitizeLabel(row.db, INNER)}`}</span>
         <span fg={T.dim}>{count}</span>
       </>
     );
   } else {
-    name = <span fg={T.text}>{`  ${row.coll ?? ""}`}</span>;
+    // sanitizeLabel: control chars in a real collection name would otherwise
+    // reset the terminal cursor and blank the row (see format.ts).
+    name = <span fg={T.text}>{`  ${sanitizeLabel(row.coll ?? "", INNER - 2)}`}</span>;
     right = estCount === null ? "·" : compact(estCount);
   }
   return (

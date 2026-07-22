@@ -5,6 +5,10 @@ on:
     branches: [main, master]
   pull_request:
 
+# CI only reads the repo; never grant it write.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest

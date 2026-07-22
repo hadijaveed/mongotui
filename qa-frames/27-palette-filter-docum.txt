@@ -1,0 +1,38 @@
+  ◆ mongotui · localhost:27017 · mflix.movies                                                                    : commands  ? help  q quit 
+  1:movies   2:users   3:movies ×  [ + ]                                                                                                    
+╭─databases──────────────────╮╭─filter─────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│⌕ search collections… /     ││{ field: value }                                                                       find · agg  ▾ options│
+│ ▸ admin                    │╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│ ▸ config                   │╭─movies · ~500 matched · 9ms────────────────────────────────────────────────────────────────────────────────╮
+│ ▸ local                    ││[ Documents ] [ Table ]                                                              1–50 of 500 · page 1/10│
+│ ▾ mflix (4)                ││_id                                                                                                         │
+│   movies                500││000000…002710                                                                                              █│
+│   directors              50││000000…002711                                                                                              █│
+│   comments               1k││000000…002712                                                                                              █│
+│▎  users                 100││000000…002713                                                                                              █│
+│ ▸ mongotui_conn_test       ││000000…002714                                                                                              █│
+│                            ││000000…002715                                                                                              █│
+│                            ││000╭──────────────────────────────────────────────────────────────────────╮                                █│
+│                            ││000│ > docum                                                              │                                █│
+│                            ││000│ ▎documents view            show results as folded documents        v │                                █│
+│                            ││000│  edit document             edit the selected document in $EDITOR   e │                                █│
+│                            ││000│  new document              insert a new document                   n │                                █│
+│                            ││000│  clone document            duplicate the selected document         c │                                █│
+│                            ││000│  delete document           delete the selected document            d │                                █│
+│                            ││000│  copy document             copy the selected document as EJSON     y │                                █│
+│                            ││000│  detail view               open the selected document              ⏎ │                                 │
+│                            ││000│ ↑↓ move · ⏎ run · esc close                                          │                                 │
+│                            ││000╰──────────────────────────────────────────────────────────────────────╯                                 │
+│                            ││000000…002721                                                                                               │
+│                            ││000000…002722                                                                                               │
+│                            ││000000…002723                                                                                               │
+│                            ││000000…002724                                                                                               │
+│                            ││000000…002725                                                                                               │
+│                            ││000000…002726                                                                                               │
+│                            ││000000…002727                                                                                               │
+│                            ││000000…002728                                                                                               │
+│                            ││000000…002729                                                                                               │
+│                            ││000000…00272a                                                                                               │
+│                            ││000000…00272b                                                                                               │
+╰────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ⟨results⟩ theme: tokyonight                                                                                           mflix.movies · ● 3ms 

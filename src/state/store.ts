@@ -18,7 +18,8 @@ import { T, type Color } from "../ui/theme.ts";
 import { createMongoService } from "../data/service.ts";
 import { parsePipeline, validatePipelineText } from "../data/aggregate.ts";
 import { setRuntimeService } from "./runtime.ts";
-import { saveConfig } from "../config.ts";
+import { loadConfig, saveConfig } from "../config.ts";
+import { deleteSecret } from "../secrets.ts";
 
 export type Pane = "sidebar" | "query" | "results";
 export type ResultView = "table" | "docs" | "detail";
@@ -72,6 +73,10 @@ export interface QuerySlice {
   pipelineCursor: number;
   pipelineHistory: string[];
   pipelineHistoryIdx: number;
+  /** Selected row in the autocomplete popup. */
+  suggestSel: number;
+  /** True once the user dismissed the popup for the current token (esc). */
+  suggestDismissed: boolean;
 }
 
 export interface ResultsSlice {
@@ -172,6 +177,8 @@ export interface StoreState {
   setActiveField: (field: QueryField) => void;
   setExpanded: (expanded: boolean) => void;
   recallHistory: (dir: 1 | -1) => void;
+  moveSuggest: (dir: 1 | -1) => void;
+  dismissSuggest: () => void;
   runQuery: () => Promise<void>;
   refresh: () => Promise<void>;
   setPage: (offset: number) => Promise<void>;
@@ -204,9 +211,18 @@ let countAbort: AbortController | null = null;
 let findToken = 0;
 let countToken = 0;
 
+// Remembered results view — Documents by default (the readable card view), or
+// whatever the user last switched to. Read once at load; updated on setView.
+let preferredView_: "table" | "docs" = loadConfig().defaultView === "table" ? "table" : "docs";
+
 export function getService(): MongoService {
   if (!service) throw new Error("store not initialized");
   return service;
+}
+
+/** The remembered Table/Documents choice (used when returning from detail view). */
+export function preferredView(): "table" | "docs" {
+  return preferredView_;
 }
 
 function freshQuerySlice(validation: QueryValidation): QuerySlice {
@@ -224,6 +240,8 @@ function freshQuerySlice(validation: QueryValidation): QuerySlice {
     pipelineCursor: 0,
     pipelineHistory: [],
     pipelineHistoryIdx: -1,
+    suggestSel: 0,
+    suggestDismissed: false,
   };
 }
 
@@ -237,7 +255,7 @@ function freshResultsSlice(): ResultsSlice {
     elapsedMs: 0,
     loading: false,
     error: null,
-    view: "table",
+    view: preferredView_,
     selRow: 0,
     colOffset: 0,
     docsLine: 0,
@@ -428,12 +446,14 @@ export const useStore = create<StoreState>((set, get) => ({
 
   switchConnection: async (name, uri) => {
     const previous = service;
-    const svc = createMongoService(uri);
+    let svc: MongoService;
     let info: ConnectionInfo;
     try {
+      // Constructor included: a malformed URI throws synchronously and must
+      // land in the same toast path, not crash the TUI.
+      svc = createMongoService(uri);
       info = await svc.connect();
     } catch (e) {
-      try { await svc.close(); } catch { /* ignore */ }
       get().toast(message(e), T.red);
       return;
     }
@@ -453,6 +473,8 @@ export const useStore = create<StoreState>((set, get) => ({
       ui: { ...s.ui, connModal: null, focusedPane: "sidebar" },
     }));
     saveConfig({ lastConnection: name });
+    // A named saved connection is now "last"; drop any ad-hoc __last secret.
+    deleteSecret("__last");
     get().toast(`connected to ${name}`, T.accent);
     await get().loadDatabases();
   },
@@ -565,11 +587,33 @@ export const useStore = create<StoreState>((set, get) => ({
   setQueryField: (field, value, cursor) =>
     set((s) => {
       const input = { ...s.query.input, [field]: value };
-      return { query: { ...s.query, input, cursor, validation: getService().validateQuery(input) } };
+      return {
+        query: {
+          ...s.query,
+          input,
+          cursor,
+          validation: getService().validateQuery(input),
+          suggestSel: 0,
+          suggestDismissed: false,
+        },
+      };
     }),
 
   setActiveField: (field) =>
-    set((s) => ({ query: { ...s.query, activeField: field, cursor: s.query.input[field].length } })),
+    set((s) => ({
+      query: {
+        ...s.query,
+        activeField: field,
+        cursor: s.query.input[field].length,
+        suggestSel: 0,
+        suggestDismissed: false,
+      },
+    })),
+
+  moveSuggest: (dir) =>
+    set((s) => ({ query: { ...s.query, suggestSel: Math.max(0, s.query.suggestSel + dir) } })),
+
+  dismissSuggest: () => set((s) => ({ query: { ...s.query, suggestDismissed: true } })),
 
   setExpanded: (expanded) =>
     set((s) => ({ query: { ...s.query, expanded, activeField: expanded ? s.query.activeField : "filter" } })),
@@ -613,7 +657,12 @@ export const useStore = create<StoreState>((set, get) => ({
       return;
     }
     pushHistory(set, get, query.input.filter);
-    set((s) => ({ results: { ...s.results, offset: 0, selRow: 0, colOffset: 0, docsLine: 0 } }));
+    // A successful run hands focus to the results so j/k browse rows immediately
+    // (they'd otherwise keep typing into the query editor); `2` or `/` comes back.
+    set((s) => ({
+      results: { ...s.results, offset: 0, selRow: 0, colOffset: 0, docsLine: 0 },
+      ui: { ...s.ui, focusedPane: "results" },
+    }));
     await doFind(set, get, 0);
     void runCount(set, get);
   },
@@ -660,7 +709,14 @@ export const useStore = create<StoreState>((set, get) => ({
 
   setPipeline: (value, cursor) =>
     set((s) => ({
-      query: { ...s.query, pipeline: value, pipelineCursor: cursor, pipelineValidation: validatePipelineText(value) },
+      query: {
+        ...s.query,
+        pipeline: value,
+        pipelineCursor: cursor,
+        pipelineValidation: validatePipelineText(value),
+        suggestSel: 0,
+        suggestDismissed: false,
+      },
     })),
 
   recallPipelineHistory: (dir) =>
@@ -726,6 +782,7 @@ export const useStore = create<StoreState>((set, get) => ({
           detailLine: 0,
           foldedPaths: computeDefaultFolds(docs),
         },
+        ui: { ...s.ui, focusedPane: "results" }, // same handoff as runQuery: browse rows right away
       }));
     } catch (e) {
       if (token !== findToken) return;
@@ -734,7 +791,17 @@ export const useStore = create<StoreState>((set, get) => ({
     }
   },
 
-  setView: (view) => set((s) => ({ results: { ...s.results, view } })),
+  setView: (view) => {
+    // Remember the Table/Documents choice (not the transient detail view) so it
+    // persists across collections, tabs and restarts.
+    if (view === "table" || view === "docs") {
+      if (view !== preferredView_) {
+        preferredView_ = view;
+        saveConfig({ defaultView: view });
+      }
+    }
+    set((s) => ({ results: { ...s.results, view } }));
+  },
 
   setSelRow: (row) =>
     set((s) => ({ results: { ...s.results, selRow: Math.max(0, Math.min(s.results.docs.length - 1, row)) } })),

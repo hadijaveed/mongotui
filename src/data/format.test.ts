@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { computeDiff, describeDiff } from "./diff.ts";
-import { BSON, bsonTypeName, cellText, docToEditable, parseEditedDoc } from "./format.ts";
+import { BSON, bsonTypeName, cellText, docToEditable, parseEditedDoc, sanitizeLabel } from "./format.ts";
 
 describe("format and edit diff", () => {
   test("editor shell syntax round-trips BSON values and nesting", () => {
@@ -41,3 +41,19 @@ describe("format and edit diff", () => {
   });
 });
 
+describe("sanitizeLabel", () => {
+  test("strips carriage returns / newlines that blank a terminal row", () => {
+    expect(sanitizeLabel("patient\rcareprograms")).toBe("patientcareprograms");
+    expect(sanitizeLabel("surveys\n")).toBe("surveys");
+  });
+  test("strips other control chars and collapses whitespace", () => {
+    expect(sanitizeLabel("a\u0000b\tc  d")).toBe("abc d");
+  });
+  test("trims and truncates", () => {
+    expect(sanitizeLabel("  spaced  ")).toBe("spaced");
+    expect(sanitizeLabel("x".repeat(50), 10).length).toBeLessThanOrEqual(10);
+  });
+  test("an all-control-char name collapses to empty (caller can skip it)", () => {
+    expect(sanitizeLabel("\r\n\u0001")).toBe("");
+  });
+});

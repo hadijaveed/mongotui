@@ -1,5 +1,6 @@
 import { useTerminalDimensions } from "@opentui/react";
 import { useStore } from "../state/store.ts";
+import { secretsBackend } from "../secrets.ts";
 import { T, themeNames, type Color } from "./theme.ts";
 import { LineEditor } from "./LineEditor.tsx";
 import { buildCommands, filterCommands, type Command } from "./commands.ts";
@@ -236,6 +237,7 @@ function ConnModal(): React.ReactNode {
         <box onMouseDown={() => connDeleteSelected()}><text><span fg={T.red}>[ D delete ]</span></text></box>
         <text><span fg={T.dim}>esc close</span></text>
       </box>
+      <text><span fg={T.dim}>{`secrets: ${secretsBackend()}`}</span></text>
     </Overlay>
   );
 }
@@ -293,8 +295,8 @@ function PaletteModal(): React.ReactNode {
                 style={{ height: 1, flexDirection: "row", paddingX: 1, backgroundColor: selected ? T.selBg : undefined }}
               >
                 <text><span fg={selected ? T.focus : T.dim}>{selected ? "▎" : " "}</span></text>
-                <box style={{ width: PALETTE_NAME_W }}><text><span fg={T.text}>{cmd.name}</span></text></box>
-                <box style={{ flexGrow: 1 }}><text><span fg={T.dim}>{cmd.description}</span></text></box>
+                <box style={{ width: PALETTE_NAME_W, overflow: "hidden" }}><text wrapMode="none"><span fg={T.text}>{cmd.name}</span></text></box>
+                <box style={{ flexGrow: 1, overflow: "hidden" }}><text wrapMode="none"><span fg={T.dim}>{cmd.description}</span></text></box>
                 {cmd.hint ? <text><span fg={T.dim}>{cmd.hint}</span></text> : null}
               </box>
             );

@@ -2,12 +2,14 @@ import { useRef } from "react";
 import { useKeyboard, usePaste, useRenderer } from "@opentui/react";
 import type { KeyEvent } from "@opentui/core";
 import type { QueryField } from "../shared/types.ts";
-import { teardownStore, useStore, type StoreState } from "../state/store.ts";
+import { preferredView, teardownStore, useStore, type StoreState } from "../state/store.ts";
 import { quit } from "../state/runtime.ts";
 import { T } from "./theme.ts";
 import { applyKey } from "./LineEditor.tsx";
+import { sanitizeLabel } from "../data/format.ts";
 import { Sidebar, sidebarRows } from "./Sidebar.tsx";
-import { QueryBar } from "./QueryBar.tsx";
+import { QueryBar, Autocomplete, queryAutocomplete, suggestVisible } from "./QueryBar.tsx";
+import { applySuggestion } from "./autocomplete.ts";
 import { ResultsPane } from "./ResultsPane.tsx";
 import { TabBar } from "./TabBar.tsx";
 import { Modals } from "./modals.tsx";
@@ -37,7 +39,7 @@ const QUERY_ORDER: QueryField[] = [
 function TopBar(): React.ReactNode {
   const conn = useStore((s) => s.conn);
   const ns = useStore((s) => s.ns);
-  const nsText = ns ? `${ns.db}.${ns.coll}` : "—";
+  const nsText = ns ? `${sanitizeLabel(ns.db, 40)}.${sanitizeLabel(ns.coll, 40)}` : "—";
   const connLabel = conn.name ?? conn.host;
   return (
     <box style={{ height: 1, flexDirection: "row", paddingX: 1 }}>
@@ -78,7 +80,7 @@ function StatusBar(): React.ReactNode {
   const s = useStore();
   const latency = s.conn.latencyMs;
   const dot = latency === null ? T.dim : latency < 50 ? T.focus : latency < 200 ? T.amber : T.red;
-  const right = s.ns ? `${s.ns.db}.${s.ns.coll}` : s.conn.host;
+  const right = s.ns ? `${sanitizeLabel(s.ns.db, 40)}.${sanitizeLabel(s.ns.coll, 40)}` : s.conn.host;
   const pane = s.ui.focusedPane;
   return (
     <box style={{ height: 1, flexDirection: "row", paddingX: 1 }}>
@@ -182,6 +184,7 @@ export function App(): React.ReactNode {
         </box>
       </box>
       <StatusBar />
+      <Autocomplete />
       <Modals />
     </box>
   );
@@ -373,7 +376,33 @@ function handlePalette(store: StoreState, key: KeyEvent): void {
   store.setPaletteModal({ query: next.value, cursor: next.cursor, sel: 0 });
 }
 
+/**
+ * When the autocomplete popup is visible it intercepts a small set of keys.
+ * Returns true if the key was consumed by the popup.
+ */
+function handleSuggest(store: StoreState, key: KeyEvent): boolean {
+  if (!suggestVisible(store)) return false;
+  if (key.name === "down") return store.moveSuggest(1), true;
+  if (key.name === "up") return store.moveSuggest(-1), true;
+  if (key.name === "escape") return store.dismissSuggest(), true;
+  if (key.name === "tab" || key.name === "return" || key.name === "enter") {
+    const ac = queryAutocomplete(store);
+    const sel = Math.min(Math.max(0, store.query.suggestSel), ac.suggestions.length - 1);
+    const s = ac.suggestions[sel];
+    if (!s) return true;
+    const applied = applySuggestion(ac.value, ac.cursor, s);
+    if (store.query.mode === "aggregate") store.setPipeline(applied.value, applied.cursor);
+    else store.setQueryField(store.query.activeField, applied.value, applied.cursor);
+    // Accepting a value collapses the popup (setQueryField re-armed it). Typing
+    // the next character re-opens it, so this only closes it for the accept.
+    store.dismissSuggest();
+    return true;
+  }
+  return false;
+}
+
 function handleQuery(store: StoreState, key: KeyEvent): void {
+  if (handleSuggest(store, key)) return;
   if (store.query.mode === "aggregate") return handlePipeline(store, key);
   if (key.name === "tab") {
     if (!store.query.expanded) {
@@ -509,9 +538,11 @@ function handleResults(store: StoreState, key: KeyEvent): void {
     if (seq === "d") return deleteSelectedDoc();
   }
   if (seq === "y") return copySelectedDoc();
-  if (seq === "v") return store.setView(view === "table" ? "docs" : "table");
+  if (seq === "v") return store.setView(view === "docs" ? "table" : "docs");
   if (key.name === "escape") {
-    if (view === "detail") return store.setView("table");
+    // Leaving the transient detail view returns to whichever list view is
+    // remembered (Documents by default), not a hardcoded Table.
+    if (view === "detail") return store.setView(store.results.docs.length ? preferredView() : "docs");
     store.setFocus("sidebar");
     return;
   }

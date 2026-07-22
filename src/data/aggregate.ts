@@ -4,12 +4,14 @@
  */
 import type { FieldValidation } from "../shared/types.ts";
 import { QUERY_PARSER } from "./format.ts";
+import { findBannedJsOperator } from "./service.ts";
 
 function trimError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error);
   return (raw.split(/\r?\n/, 1)[0]?.trim() || "invalid pipeline")
     .replace(/^Unexpected/, "unexpected")
     .replace(/\s+in\s+\(.*$/, "")
+    .replace(/\s*\(\d+:\d+\)/, "") // parser line:col refers to its wrapped source, not the user's text
     .replace(/\s+/g, " ");
 }
 
@@ -39,6 +41,10 @@ export function parsePipeline(text: string): Record<string, unknown>[] {
     const keys = Object.keys(stage);
     if (keys.length !== 1 || !keys[0]!.startsWith("$")) {
       throw new Error(`stage ${i + 1}: expected a single $stage key`);
+    }
+    const banned = findBannedJsOperator(stage);
+    if (banned) {
+      throw new Error(`stage ${i + 1}: ${banned} runs JS on the server — disabled (MONGOTUI_ALLOW_JS=1 to enable)`);
     }
   });
   return stages as Record<string, unknown>[];
