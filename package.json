@@ -1,0 +1,34 @@
+{
+  "name": "mongotui",
+  "module": "src/index.tsx",
+  "scripts": {
+    "dev": "bun run src/index.tsx",
+    "seed": "bun run scripts/seed.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "build": "bun build --compile --minify --sourcemap=none ./src/index.tsx --outfile mongotui",
+    "build:linux-x64": "bun build --compile --minify --sourcemap=none --target=bun-linux-x64 ./src/index.tsx --outfile dist/mongotui-linux-x64",
+    "build:linux-arm64": "bun build --compile --minify --sourcemap=none --target=bun-linux-arm64 ./src/index.tsx --outfile dist/mongotui-linux-arm64",
+    "build:darwin-x64": "bun build --compile --minify --sourcemap=none --target=bun-darwin-x64 ./src/index.tsx --outfile dist/mongotui-darwin-x64",
+    "build:darwin-arm64": "bun build --compile --minify --sourcemap=none --target=bun-darwin-arm64 ./src/index.tsx --outfile dist/mongotui-darwin-arm64"
+  },
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.17"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.4.5",
+    "@opentui/react": "^0.4.5",
+    "bson": "^7.3.1",
+    "js-tokens": "^10.0.0",
+    "mongodb": "^7.5.0",
+    "mongodb-query-parser": "^4.7.14",
+    "react": "^19.2.7",
+    "zustand": "^5.0.14"
+  }
+}

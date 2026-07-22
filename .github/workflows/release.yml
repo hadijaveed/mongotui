@@ -1,0 +1,70 @@
+name: release
+
+# Push a tag like v0.1.0 to build every target and publish a GitHub Release
+# with the compressed binaries attached. install.sh downloads these assets.
+#
+# Each target builds on its NATIVE runner: opentui ships its native library as
+# per-platform packages (@opentui/core-<os>-<arch>) that npm/bun only install on
+# a matching host, so cross-compiling from one runner does not work — the target's
+# native package would be filtered out. Native runners guarantee it's present.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: bun-linux-x64
+            asset: mongotui-linux-x64
+          - os: ubuntu-24.04-arm
+            target: bun-linux-arm64
+            asset: mongotui-linux-arm64
+          - os: macos-13          # Intel
+            target: bun-darwin-x64
+            asset: mongotui-darwin-x64
+          - os: macos-14          # Apple Silicon
+            target: bun-darwin-arm64
+            asset: mongotui-darwin-arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - run: bun install --frozen-lockfile
+
+      - name: Compile ${{ matrix.target }}
+        run: |
+          bun build --compile --minify --sourcemap=none \
+            --target=${{ matrix.target }} \
+            ./src/index.tsx --outfile "${{ matrix.asset }}"
+
+      # .xz (smallest, ~31 MB — installer prefers it) + .gz (universal fallback:
+      # gunzip is on every macOS/Linux). shasum works on both runner families.
+      - name: Compress + checksum
+        run: |
+          A="${{ matrix.asset }}"
+          gzip -9 -c "$A" > "$A.gz"
+          xz   -9 -c "$A" > "$A.xz"
+          shasum -a 256 "$A.gz" "$A.xz" > "$A.sha256"
+          ls -lh "$A" "$A.gz" "$A.xz"
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.asset }}.gz
+            ${{ matrix.asset }}.xz
+            ${{ matrix.asset }}.sha256
+          fail_on_unmatched_files: true
