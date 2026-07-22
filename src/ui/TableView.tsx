@@ -214,7 +214,7 @@ export function TableView(): React.ReactNode {
           </box>
         ) : null}
       </box>
-      <scrollbox ref={scrollRef} style={{ flexGrow: 1 }}>
+      <scrollbox ref={scrollRef} focusable={false} style={{ flexGrow: 1 }}>
         {results.docs.length === 0 && !results.loading ? (
           <text><span fg={T.dim}>no documents</span></text>
         ) : (

@@ -96,7 +96,7 @@ export function Sidebar({ focused }: { focused: boolean }): React.ReactNode {
           <text><span fg={T.dim}>search collections… /</span></text>
         )}
       </box>
-      <scrollbox ref={scrollRef} viewportCulling={false} style={{ flexGrow: 1 }}>
+      <scrollbox ref={scrollRef} focusable={false} viewportCulling={false} style={{ flexGrow: 1 }}>
         {rows.length === 0 ? (
           <text><span fg={T.dim}>{filtering ? "no matches" : tree.databases.length ? "no collections" : "loading…"}</span></text>
         ) : (

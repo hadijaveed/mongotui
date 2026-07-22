@@ -45,7 +45,7 @@ Requires Bun ≥ 1.2 and a reachable MongoDB (any 4.x–8.x).
 | | |
 |---|---|
 | `:` (or `⌃k` / `⌃p`) | **command palette** — fuzzy-search every action + jump to any loaded collection |
-| `tab` / `1` `2` `3` | cycle / jump pane focus (sidebar · query · results) |
+| `tab` / `⇧tab` / `1` `2` `3` | cycle / jump pane focus (sidebar · query · results); in the query bar `tab` reveals / cycles the option fields |
 | `j k` `g G` | move · top / bottom |
 | `enter` | open collection · open document **detail** · confirm |
 | `esc` | back out one level (modal → query → results → sidebar) |

@@ -21,20 +21,43 @@ function isPrintable(key: KeyEvent): boolean {
   return typeof seq === "string" && seq.length === 1 && seq.charCodeAt(0) >= 0x20 && seq.charCodeAt(0) !== 0x7f;
 }
 
+// Bracket/quote pairs that auto-close in the query editors (not in plain text fields).
+const AUTO_PAIRS: Record<string, string> = { "{": "}", "[": "]", "(": ")", '"': '"', "'": "'" };
+const AUTO_CLOSERS = new Set(Object.values(AUTO_PAIRS));
+
+export interface EditorOpts {
+  /** Auto-close `{ [ ( " '`, type-through the closer, and pair-delete on backspace. */
+  autoPairs?: boolean;
+}
+
 /** Pure single-line editor reducer. Returns a new state; cursor always clamped. */
-export function applyKey(state: EditorState, key: KeyEvent): EditorState {
+export function applyKey(state: EditorState, key: KeyEvent, opts?: EditorOpts): EditorState {
   const { value } = state;
   const at = clamp(state.cursor, 0, value.length);
 
   if (isPrintable(key)) {
     const ch = key.name === "space" ? " " : key.sequence;
+    if (opts?.autoPairs && ch.length === 1) {
+      // Type-through: typing a closer right before the matching auto-inserted one steps over it
+      // (so `{}` + typing `}` lands after, no duplicate).
+      if (AUTO_CLOSERS.has(ch) && value[at] === ch) return { value, cursor: at + 1 };
+      // Auto-close: typing an opener inserts its closer and keeps the cursor between the pair.
+      const close = AUTO_PAIRS[ch];
+      if (close) return { value: value.slice(0, at) + ch + close + value.slice(at), cursor: at + 1 };
+    }
     return { value: value.slice(0, at) + ch + value.slice(at), cursor: at + ch.length };
   }
 
   switch (key.name) {
-    case "backspace":
+    case "backspace": {
       if (at === 0) return { value, cursor: at };
+      // Deleting the opener of an empty pair (cursor between `{|}`) removes the closer too.
+      const prev = value[at - 1];
+      if (opts?.autoPairs && prev !== undefined && AUTO_PAIRS[prev] !== undefined && value[at] === AUTO_PAIRS[prev]) {
+        return { value: value.slice(0, at - 1) + value.slice(at + 1), cursor: at - 1 };
+      }
       return { value: value.slice(0, at - 1) + value.slice(at), cursor: at - 1 };
+    }
     case "delete":
       if (at >= value.length) return { value, cursor: at };
       return { value: value.slice(0, at) + value.slice(at + 1), cursor: at };

@@ -54,7 +54,7 @@ export function DocsView(): React.ReactNode {
 
   if (results.docs.length === 0 && !results.loading) {
     return (
-      <scrollbox ref={scrollRef} style={{ flexGrow: 1 }}>
+      <scrollbox ref={scrollRef} focusable={false} style={{ flexGrow: 1 }}>
         <text><span fg={T.dim}>no documents</span></text>
       </scrollbox>
     );
@@ -64,7 +64,7 @@ export function DocsView(): React.ReactNode {
     // viewportCulling must stay OFF: culled (off-screen) line boxes have no laid-out
     // position, so scrollChildIntoView(`dl-…`) can't follow the cursor into a card
     // below the fold. A page is capped at 50 docs, so rendering them all is cheap.
-    <scrollbox ref={scrollRef} viewportCulling={false} style={{ flexGrow: 1 }}>
+    <scrollbox ref={scrollRef} focusable={false} viewportCulling={false} style={{ flexGrow: 1 }}>
       {cards.map((card) => {
         const doc = results.docs[card.docIdx]!;
         const active = card.docIdx === selDoc;
@@ -133,7 +133,7 @@ export function DetailView(): React.ReactNode {
   };
 
   return (
-    <scrollbox ref={scrollRef} viewportCulling={false} style={{ flexGrow: 1 }}>
+    <scrollbox ref={scrollRef} focusable={false} viewportCulling={false} style={{ flexGrow: 1 }}>
       {lines.map((line, i) => (
         <box
           key={line.id}

@@ -283,6 +283,8 @@ function handleModal(store: StoreState, key: KeyEvent): void {
 }
 
 function handleGlobal(store: StoreState, key: KeyEvent): boolean {
+  // Tab cycles pane focus (sidebar → query → results), Shift+Tab reverses. Always
+  // does something so it never feels dead. (Switch between open tabs with `[` / `]`.)
   if (key.name === "tab") {
     store.cyclePane(key.shift ? -1 : 1);
     return true;
@@ -404,7 +406,7 @@ function handleQuery(store: StoreState, key: KeyEvent): void {
     if (key.name === "down") return store.recallHistory(-1);
   }
   const field = store.query.activeField;
-  const next = applyKey({ value: store.query.input[field], cursor: store.query.cursor }, key);
+  const next = applyKey({ value: store.query.input[field], cursor: store.query.cursor }, key, { autoPairs: true });
   store.setQueryField(field, next.value, next.cursor);
 }
 
@@ -420,7 +422,7 @@ function handlePipeline(store: StoreState, key: KeyEvent): void {
   if (key.name === "tab") return; // aggregate mode has no extra fields
   if (key.name === "up") return store.recallPipelineHistory(1);
   if (key.name === "down") return store.recallPipelineHistory(-1);
-  const next = applyKey({ value: store.query.pipeline, cursor: store.query.pipelineCursor }, key);
+  const next = applyKey({ value: store.query.pipeline, cursor: store.query.pipelineCursor }, key, { autoPairs: true });
   store.setPipeline(next.value, next.cursor);
 }
 
